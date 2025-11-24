@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALCHI WMS (Patched)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* --- THEME FINAL --- */
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #3b82f6;
+            --accent-dark: #2563eb;
+            --background: #f3f4f6;
+            --surface: #ffffff;
+            --border: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            
+            --sidebar-width: 280px;
+            --header-height: 64px;
+            --radius: 8px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        * { box-sizing: border-box; outline: none; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-main); font-size: 14px; height: 100vh; overflow: hidden; display: flex; }
+        
+        /* --- LAYOUT STRUCTURE --- */
+        aside { width: var(--sidebar-width); background: var(--primary); color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 30; transition: width 0.3s; }
+        .brand { height: var(--header-height); display: flex; align-items: center; padding: 0 24px; font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; border-bottom: 1px solid var(--primary-light); background: rgba(0,0,0,0.2); }
+        .brand span { color: var(--accent); margin-left: 8px; }
+        
+        .nav-menu { flex: 1; overflow-y: auto; padding: 20px 12px; }
+        .nav-header { text-transform: uppercase; font-size: 0.7rem; color: #94a3b8; font-weight: 700; margin: 20px 12px 8px; letter-spacing: 0.05em; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #cbd5e1; border-radius: var(--radius); margin-bottom: 4px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .nav-item:hover { background: var(--primary-light); color: white; transform: translateX(2px); }
+        .nav-item.active { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        .nav-item svg { width: 20px; height: 20px; opacity: 0.8; }
+
+        .user-profile { padding: 16px 24px; border-top: 1px solid var(--primary-light); background: rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; }
+        .user-info { display:flex; flex-direction:column; }
+        .user-name { font-weight: 600; font-size: 0.9rem; }
+        .user-role { font-size: 0.75rem; color: #94a3b8; text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        header { height: var(--header-height); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; flex-shrink: 0; z-index: 20; }
+        .page-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main); }
+
+        .content-scroll { flex: 1; overflow-y: auto; padding: 24px; max-width: 1600px; width: 100%; margin: 0 auto; }
+
+        /* --- SPLIT SCREEN INTERFACE --- */
+        .split-container { display: flex; height: calc(100vh - var(--header-height)); overflow: hidden; background: #fff; }
+        .split-left { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; background: #f8fafc; border-right: 1px solid var(--border); }
+        .split-right { width: 420px; display: flex; flex-direction: column; background: white; box-shadow: -5px 0 25px rgba(0,0,0,0.03); z-index: 10; }
+
+        /* Product Grid Cards */
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding-bottom: 40px; }
+        .product-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: var(--shadow-sm); }
+        .product-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+        .product-card h4 { margin: 0 0 6px 0; font-size: 0.95rem; color: var(--text-main); line-height: 1.4; }
+        .product-card .meta { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 4px; }
+        .product-card .stock-display { margin-top: 12px; font-size: 1.1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
+        
+        /* Stock Indicator Bar */
+        .stock-bar { height: 4px; width: 100%; background: #e2e8f0; margin-top: 12px; border-radius: 2px; overflow: hidden; }
+        .stock-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.5s; }
+        .low-stock .stock-fill { background: var(--danger); }
+
+        /* Document Panel (Right) */
+        .doc-header { padding: 24px; border-bottom: 1px solid var(--border); background: #fff; }
+        .doc-body { flex: 1; overflow-y: auto; padding: 0; }
+        .doc-footer { padding: 24px; border-top: 1px solid var(--border); background: #f9fafb; }
+        
+        .basket-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); text-align: center; padding: 40px; opacity: 0.6; }
+        .basket-item { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; animation: fadeIn 0.3s; }
+        .basket-item:hover { background: #f8fafc; }
+        .basket-item-info h5 { margin: 0; font-size: 0.9rem; }
+        .basket-item-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .basket-qty { font-weight: 700; font-size: 1rem; background: #eff6ff; color: var(--accent-dark); padding: 4px 10px; border-radius: 6px; }
+
+        /* --- COMPONENTS --- */
+        .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 24px; margin-bottom: 24px; }
+        
+        .filters-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .search-input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); min-width: 200px; font-size: 0.9rem; transition: 0.2s; }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .select-input { padding: 12px 36px 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background-color: white; cursor: pointer; font-size: 0.9rem; }
+
+        .btn { padding: 10px 20px; border-radius: var(--radius); border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; font-size: 0.9rem; }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2); }
+        .btn-primary:hover { background: var(--accent-dark); }
+        .btn-secondary { background: white; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-secondary:hover { background: #f9fafb; border-color: #cbd5e1; }
+        .btn-secondary.active { background: var(--primary-light); color: white; border-color: var(--primary-light); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fee2e2; }
+        .btn-icon-only { padding: 8px; border-radius: 6px; color: var(--text-muted); background: transparent; }
+        .btn-icon-only:hover { background: #fee2e2; color: var(--danger); }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+        /* Data Tables */
+        .table-wrapper { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 0.9rem; }
+        th { text-align: left; padding: 14px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+        td { padding: 14px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover td { background: #fcfcfc; }
+
+        /* Badges */
+        .badge { padding: 4px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-blue { background: #eff6ff; color: #1d4ed8; }
+        .badge-green { background: #ecfdf5; color: #059669; }
+        .badge-red { background: #fef2f2; color: #dc2626; }
+        .badge-orange { background: #fffbeb; color: #d97706; }
+        .badge-gray { background: #f3f4f6; color: #4b5563; }
+        .badge-dark { background: #374151; color: white; }
+        .badge-purple { background: #f3e8ff; color: #7e22ce; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-box { background: white; width: 90%; max-width: 550px; border-radius: 12px; padding: 32px; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.2s; max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 16px 0; color: var(--text-main); }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); }
+        .form-group input[type="text"], 
+        .form-group input[type="number"], 
+        .form-group input[type="password"], 
+        .form-group input[type="date"], 
+        .form-group select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; transition: border 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+        /* Custom Checkbox Styling */
+        .checkbox-group { display: flex; align-items: center; gap: 12px; padding: 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+        .checkbox-group input { width: 20px; height: 20px; cursor: pointer; }
+        .checkbox-group label { margin: 0; cursor: pointer; color: var(--text-main); }
+
+        .hidden { display: none !important; }
+        #loader { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.3s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Toasts - TOP RIGHT */
+        #toast-container { position: fixed; top: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 12px; }
+        .toast { padding: 16px 24px; background: white; border-left: 4px solid #ccc; box-shadow: var(--shadow-lg); border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 12px; animation: slideInRight 0.3s; min-width: 300px; }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Mobile Adjustments */
+        @media (max-width: 1024px) {
+            .split-container { flex-direction: column; height: auto; overflow: visible; }
+            .split-left { height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+            .split-right { width: 100%; position: fixed; bottom: 0; left: 0; height: auto; max-height: 50vh; border-top: 1px solid var(--border); box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
+            .doc-body { max-height: 200px; }
+            .content-scroll { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader"><div class="spinner"></div></div>
+    <div id="toast-container"></div>
+
+    <div id="login-screen" class="modal-overlay active" style="background: var(--primary);">
+        <div class="modal-box" style="text-align: center; max-width: 400px;">
+            <h1 style="margin-top: 0; color: var(--primary); font-size: 1.8rem;">ALCHI WMS</h1>
+            <p style="color: var(--text-muted); margin-bottom: 32px;">System Zarządzania Magazynem</p>
+            <form id="login-form" style="text-align: left;">
+                <div class="form-group">
+                    <label>Login Użytkownika</label>
+                    <input type="text" id="login-user" required placeholder="np. mu">
+                </div>
+                <div class="form-group">
+                    <label>Hasło</label>
+                    <input type="password" id="login-pass" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px;">Zaloguj się</button>
+            </form>
+        </div>
+    </div>
+
+    <aside id="sidebar" class="hidden">
+        <div class="brand">ALCHI <span>WMS</span></div>
+        <div class="nav-menu">
+            <div class="nav-header">Dashboard</div>
+            <div class="nav-item active" onclick="App.router('dashboard', this)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                Pulpit
+            </div>
+            <div class="nav-item" onclick="App.router('stock', this)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                Stany Magazynowe
+            </div>
+
+            <div class="nav-header">Operacje</div>
+            <div class="nav-item" onclick="App.router('split', this, 'pz')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                Przyjęcia (PZ)
+            </div>
+            <div class="nav-item" onclick="App.router('split', this, 'wz')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                Wydania (WZ)
+            </div>
+
+            <div class="nav-header">Raporty & Dane</div>
+            <div class="nav-item" onclick="App.router('history', this)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Historia Logów
+            </div>
+            <div class="nav-item" onclick="App.router('data', this)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M9 7h6" /></svg>
+                Import / Eksport
+            </div>
+            <div class="nav-item" onclick="App.router('settings', this)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                Konfiguracja
+            </div>
+        </div>
+        <div class="user-profile">
+            <div class="user-info">
+                <div class="user-name" id="current-username">Użytkownik</div>
+                <div class="user-role" id="current-role">--</div>
+            </div>
+            <button onclick="App.logout()" class="btn-icon-only" title="Wyloguj">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-content hidden" id="main-layout">
+        <header>
+            <div class="page-title" id="page-title">Pulpit Zarządczy</div>
+        </header>
+
+        <div id="view-dashboard" class="view-section content-scroll">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:24px; margin-bottom:32px;">
+                <div class="card" style="border-left: 4px solid var(--accent);">
+                    <div style="color:var(--text-muted); font-size:0.9rem; font-weight:600;">Aktywne Produkty</div>
+                    <div style="font-size:2.5rem; font-weight:800; color:var(--text-main); margin-top:8px;" id="dash-total">0</div>
+                </div>
+                <div class="card" style="border-left: 4px solid var(--danger);">
+                    <div style="color:var(--text-muted); font-size:0.9rem; font-weight:600;">Niski Stan (Alarm)</div>
+                    <div style="font-size:2.5rem; font-weight:800; color:var(--danger); margin-top:8px;" id="dash-low">0</div>
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:16px; margin-bottom:32px;">
+                <button class="btn btn-secondary" style="flex:1; padding:20px;" onclick="App.router('split', null, 'pz')">+ Szybkie PZ</button>
+                <button class="btn btn-secondary" style="flex:1; padding:20px;" onclick="App.router('split', null, 'wz')">- Szybkie WZ</button>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0; margin-bottom:20px;">Ostatnia Aktywność</h3>
+                <div class="table-wrapper">
+                    <table id="dash-history-table">
+                        <thead><tr><th>Typ</th><th>Dokument</th><th>Data</th><th>Operator</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-stock" class="view-section content-scroll hidden">
+            <div class="filters-bar">
+                <input type="text" class="search-input" placeholder="Szukaj produktu (Nazwa, EAN)..." onkeyup="Stock.render()">
+                <select class="select-input" id="stock-filter-cat" onchange="Stock.render()"></select>
+                <select class="select-input" id="stock-filter-status" onchange="Stock.render()">
+                    <option value="active">Aktywne</option>
+                    <option value="archived">Archiwum</option>
+                    <option value="all">Wszystkie</option>
+                </select>
+                <div style="flex:1"></div>
+                <button class="btn btn-primary" onclick="Stock.openModal()">+ Nowy Produkt</button>
+            </div>
+            <div class="card" style="padding:0; overflow:hidden;">
+                <div class="table-wrapper" style="border:none;">
+                    <table id="stock-table">
+                        <thead><tr><th>Produkt / EAN</th><th>Kategoria</th><th>Typ</th><th>Status</th><th>Stan</th><th>Lokalizacja</th><th>Akcje</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-split" class="view-section split-container hidden">
+            <div class="split-left">
+                <div class="filters-bar">
+                    <input type="text" id="split-search" class="search-input" placeholder="Wyszukaj produkt..." onkeyup="Ops.renderSourceList()">
+                    <select class="select-input" id="split-cat-filter" onchange="Ops.renderSourceList()"></select>
+                </div>
+                <div id="split-source-grid" class="product-grid">
+                    </div>
+            </div>
+            
+            <div class="split-right">
+                <div class="doc-header">
+                    <div style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; letter-spacing:0.05em;">Tworzenie Dokumentu</div>
+                    <h2 style="margin: 4px 0 16px 0; color:var(--text-main);" id="split-doc-title">Nowy Dokument</h2>
+                    <input type="text" id="split-doc-ref" class="search-input" placeholder="Numer referencyjny (np. PZ/2025/01)" style="width:100%;">
+                </div>
+                <div class="doc-body" id="split-basket-list">
+                    <div class="basket-empty">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:48px; margin-bottom:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                        Lista pozycji jest pusta.<br>Wybierz produkty z lewej strony.
+                    </div>
+                </div>
+                <div class="doc-footer">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:16px; font-size:0.95rem;">
+                        <span style="color:var(--text-muted);">Liczba pozycji:</span>
+                        <strong id="split-total-items">0</strong>
+                    </div>
+                    <button class="btn btn-primary" style="width:100%; padding:14px;" onclick="Ops.confirmDoc()">Zatwierdź Dokument</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-history" class="view-section content-scroll hidden">
+            <div class="filters-bar">
+                <input type="text" class="search-input" placeholder="Szukaj w historii..." onkeyup="Hist.render(this.value)">
+            </div>
+            <div class="card" style="padding:0; overflow:hidden;">
+                <div class="table-wrapper" style="border:none;">
+                    <table id="full-history-table">
+                        <thead><tr><th>Typ</th><th>Numer Dokumentu</th><th>Data Operacji</th><th>Operator</th><th>Akcja</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-data" class="view-section content-scroll hidden">
+            <div class="card">
+                <h2 style="margin-top:0">Zarządzanie Danymi</h2>
+                <p style="color:var(--text-muted); margin-bottom:32px;">Eksportuj stan magazynowy do Excela lub zaktualizuj bazę produktów.</p>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px;">
+                    <div style="padding:24px; background:#f8fafc; border-radius:8px; border:1px solid var(--border);">
+                        <h4 style="margin-top:0">Eksport CSV</h4>
+                        <p style="font-size:0.9rem; color:var(--text-muted);">Pobierz aktualną listę produktów, stanów i lokalizacji.</p>
+                        <button class="btn btn-secondary" onclick="Data.exportCSV()">Pobierz plik .CSV</button>
+                    </div>
+                    
+                    <div style="padding:24px; background:#f8fafc; border-radius:8px; border:1px solid var(--border);">
+                        <h4 style="margin-top:0">Import CSV</h4>
+                        <p style="font-size:0.9rem; color:var(--text-muted);">Format: <code>Nazwa,Kategoria,EAN,Lokalizacja,MinStan,Jednostka,Typ</code></p>
+                        <input type="file" id="csv-file-input" accept=".csv" style="margin-bottom:12px; display:block;">
+                        <button class="btn btn-primary" onclick="Data.importCSV()">Wgraj Dane</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-settings" class="view-section content-scroll hidden">
+            <div class="card" style="max-width:800px">
+                <h3 style="margin-top:0">Kategorie Produktów</h3>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <input id="new-cat-in" class="search-input" placeholder="Nazwa nowej kategorii...">
+                    <button class="btn btn-primary" onclick="Settings.addCat()">Dodaj</button>
+                </div>
+                <div id="cat-list"></div>
+            </div>
+
+            <div id="admin-panel-users" class="card hidden" style="max-width:800px; border-left:4px solid var(--accent);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0">Zarządzanie Użytkownikami</h3>
+                    <button class="btn btn-sm btn-primary" onclick="document.getElementById('modal-user-add').classList.add('active')">+ Dodaj Użytkownika</button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="users-table">
+                        <thead><tr><th>Imię i Nazwisko</th><th>Login</th><th>Rola</th><th>Akcja</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="admin-panel-danger" class="card hidden" style="max-width:800px; border-color:#fee2e2; background:#fffafa;">
+                <h3 style="margin-top:0; color:var(--danger);">Strefa Niebezpieczna</h3>
+                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:20px;">
+                    Poniższa operacja usunie <strong>wszystkie dane</strong> z systemu (produkty, historię operacji, zamówienia).
+                    Tej akcji nie można cofnąć.
+                </p>
+                <button class="btn btn-danger" onclick="Settings.clearDB()">Wyczyść Bazę Danych</button>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="modal-overlay" id="modal-add-item">
+        <div class="modal-box">
+            <div class="modal-title" id="modal-item-title">Dodaj Pozycję</div>
+            <input type="hidden" id="modal-item-pid">
+            
+            <div id="modal-item-stock-info" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-main); background: #f1f5f9; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
+                <span>Dostępny stan magazynowy:</span>
+                <strong id="modal-stock-value" style="font-size: 1.1rem; color: var(--accent-dark);">--</strong>
+            </div>
+            
+            <div class="form-group">
+                <label>Ilość</label>
+                <input type="number" id="inp-common-qty" min="1" value="1" style="font-size:1.2rem; font-weight:700;">
+            </div>
+
+            <div id="modal-fields-lot-tracking">
+                <div id="modal-fields-pz" class="hidden">
+                    <div class="form-group"><label>Numer Partii (LOT)</label><input type="text" id="inp-pz-lot"></div>
+                    <div class="form-group"><label>Data Ważności</label><input type="date" id="inp-pz-exp"></div>
+                </div>
+
+                <div id="modal-fields-wz" class="hidden">
+                    <div class="form-group">
+                        <label>Wybierz Partię (Dostępne)</label>
+                        <select id="inp-wz-lot"></select>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px;">
+                <button class="btn btn-secondary" onclick="Ops.closeModal()">Anuluj</button>
+                <button class="btn btn-primary" onclick="Ops.addItemToBasket()">Dodaj Pozycję</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-product">
+        <div class="modal-box" style="max-width: 700px;">
+            <div class="modal-title">Edycja Produktu</div>
+            <form id="form-product" onsubmit="return false;">
+                <input type="hidden" id="p-id">
+                <div class="form-group"><label>Nazwa Produktu</label><input type="text" id="p-name" required></div>
+                
+                <div class="checkbox-group form-group">
+                    <input type="checkbox" id="p-has-batches" checked>
+                    <label for="p-has-batches">Śledzenie partii (LOT / Data ważności)</label>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                    <div class="form-group"><label>Kategoria</label><select id="p-cat"></select></div>
+                    <div class="form-group"><label>Jednostka</label><select id="p-unit"><option value="szt">szt.</option><option value="kg">kg</option><option value="m">mb</option><option value="l">litr</option></select></div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                    <div class="form-group"><label>Kod EAN</label><input type="text" id="p-ean"></div>
+                    <div class="form-group"><label>Min. Stan (Alarm)</label><input type="number" id="p-min" value="5"></div>
+                </div>
+                <div class="form-group"><label>Lokalizacja Magazynowa</label><input type="text" id="p-loc"></div>
+                
+                <div style="margin-top:20px; border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+                    <div style="background:#f8fafc; padding:10px 16px; font-weight:600; border-bottom:1px solid var(--border); font-size:0.85rem;">Zarządzanie Stanem / Partiami</div>
+                    <div id="p-lots-container" style="padding:16px; max-height:200px; overflow-y:auto;"></div>
+                </div>
+
+                <div style="margin-top:32px; padding-top:20px; border-top:1px solid var(--border); display:flex; justify-content:space-between;">
+                     <button id="btn-archive" class="btn btn-secondary" onclick="Stock.toggleArchive()">Archiwizuj</button>
+                     <div style="display:flex; gap:12px;">
+                        <button class="btn btn-secondary" onclick="Stock.closeModal()">Anuluj</button>
+                        <button class="btn btn-primary" onclick="Stock.save()">Zapisz Zmiany</button>
+                     </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="modal-lot-edit" style="z-index:200;">
+        <div class="modal-box" style="max-width:350px;">
+            <div class="modal-title">Korekta Partii</div>
+            <input type="hidden" id="lot-edit-idx">
+            <div class="form-group">
+                <label>Numer LOT</label>
+                <input type="text" id="lot-edit-num">
+            </div>
+            <div class="form-group">
+                <label>Data Ważności</label>
+                <input type="date" id="lot-edit-exp">
+            </div>
+            <div class="form-group">
+                <label>Ilość (Korekta)</label>
+                <input type="number" id="lot-edit-qty">
+            </div>
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-lot-edit').classList.remove('active')">Anuluj</button>
+                <button class="btn btn-primary" onclick="Stock.saveLotChange()">Zatwierdź Korektę</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="modal-history-details">
+        <div class="modal-box">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <div class="modal-title" style="margin-bottom:4px;">Szczegóły Operacji</div>
+                    <div id="hist-detail-meta" style="color:var(--text-muted); font-size:0.9rem; margin-bottom:24px;"></div>
+                </div>
+                <button class="btn-icon-only" onclick="document.getElementById('modal-history-details').classList.remove('active')">&times;</button>
+            </div>
+            
+            <div class="table-wrapper" style="border:1px solid var(--border); max-height:400px; overflow-y:auto;">
+                <table style="width:100%;">
+                    <thead style="position:sticky; top:0; z-index:5;">
+                        <tr><th>Produkt</th><th>Ilość</th><th>Szczegóły (LOT / Opakowanie)</th></tr>
+                    </thead>
+                    <tbody id="hist-detail-items"></tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top:24px; text-align:right;">
+                <button class="btn btn-primary" onclick="document.getElementById('modal-history-details').classList.remove('active')">Zamknij</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-user-add">
+        <div class="modal-box">
+            <div class="modal-title">Dodaj Użytkownika</div>
+            <form onsubmit="return false;">
+                <div class="form-group">
+                    <label>Imię i Nazwisko</label>
+                    <input type="text" id="u-new-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Login (unikalny)</label>
+                    <input type="text" id="u-new-login" required>
+                </div>
+                <div class="form-group">
+                    <label>Hasło</label>
+                    <input type="text" id="u-new-pass" required>
+                </div>
+                <div class="form-group">
+                    <label>Rola</label>
+                    <select id="u-new-role">
+                        <option value="user">Użytkownik (Magazynier)</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                <div style="margin-top:24px; text-align:right;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('modal-user-add').classList.remove('active')">Anuluj</button>
+                    <button class="btn btn-primary" onclick="Users.add()">Utwórz Konto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, addDoc, setDoc, updateDoc, deleteDoc, runTransaction, serverTimestamp, query, orderBy, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAIWvoGZmqUbW-ZuBxHnLi4AVKkWOUb724", authDomain: "alchi-d1c38.firebaseapp.com", projectId: "alchi-d1c38", storageBucket: "alchi-d1c38.firebasestorage.app", messagingSenderId: "1049557849901", appId: "1:1049557849901:web:34258fac5872692acb65a4" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const state = { user: null, products: [], categories: [], history: [], basket: [], currentMode: null, allUsers: [] };
+
+        // --- UTILITIES ---
+        const UI = {
+            toast: (msg, type='success') => {
+                const t = document.createElement('div'); t.className=`toast ${type}`; 
+                t.innerHTML = type === 'error' 
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> ${msg}`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> ${msg}`;
+                document.getElementById('toast-container').appendChild(t);
+                setTimeout(()=>t.remove(), 3500);
+            },
+            loader: (show) => document.getElementById('loader').classList.toggle('hidden', !show)
+        };
+
+        // --- CORE APP ---
+        const App = {
+            init: async () => {
+                await signInAnonymously(auth);
+                
+                const adminQ = query(collection(db, "users"), where("username", "==", "mu"));
+                const adminSnap = await getDocs(adminQ);
+                if(adminSnap.empty) {
+                    await addDoc(collection(db, "users"), {
+                        fullName: "Mateusz Urban", username: "mu", password: "Samolot1122", role: "admin", createdAt: serverTimestamp()
+                    });
+                }
+
+                const savedUser = localStorage.getItem('alchi_user');
+                if(savedUser) {
+                    const usrObj = JSON.parse(savedUser);
+                    const verifyQ = query(collection(db, "users"), where("username", "==", usrObj.username));
+                    const verifySnap = await getDocs(verifyQ);
+                    
+                    if(!verifySnap.empty) {
+                         const currentData = verifySnap.docs[0].data();
+                         state.user = { id: verifySnap.docs[0].id, ...currentData };
+                         document.getElementById('login-screen').classList.remove('active'); 
+                         App.start();
+                    } else {
+                        localStorage.removeItem('alchi_user');
+                        UI.loader(false);
+                    }
+                } else {
+                    UI.loader(false);
+                }
+                
+                document.getElementById('login-form').addEventListener('submit', async e => {
+                    e.preventDefault();
+                    UI.loader(true);
+                    const usr = document.getElementById('login-user').value.trim();
+                    const pass = document.getElementById('login-pass').value.trim();
+                    
+                    const q = query(collection(db, "users"), where("username", "==", usr), where("password", "==", pass));
+                    const snap = await getDocs(q);
+
+                    if(!snap.empty) {
+                        const d = snap.docs[0].data();
+                        state.user = { id: snap.docs[0].id, ...d };
+                        localStorage.setItem('alchi_user', JSON.stringify(state.user));
+                        document.getElementById('login-screen').classList.remove('active');
+                        App.start();
+                    } else {
+                        UI.toast('Błędny login lub hasło', 'error');
+                    }
+                    UI.loader(false);
+                });
+            },
+            start: () => {
+                document.getElementById('current-username').innerText = state.user.fullName;
+                document.getElementById('current-role').innerText = state.user.role === 'admin' ? 'Administrator' : 'Magazynier';
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('main-layout').classList.remove('hidden');
+                
+                onSnapshot(doc(db, "config", "general"), s => { 
+                    state.categories = s.exists() ? s.data().categories : ["Ogólna"]; 
+                    Settings.render(); 
+                    App.updateAllCategoryDropdowns(); 
+                    Stock.render(); 
+                });
+                
+                onSnapshot(query(collection(db, "products"), orderBy("name")), s => {
+                    state.products = s.docs.map(d => { 
+                        const dat = d.data();
+                        let total = 0;
+                        const hasBatches = (dat.hasBatches !== undefined) ? dat.hasBatches : true;
+                        
+                        if (hasBatches) {
+                            total = (dat.lots || []).reduce((a,b) => a + (b.qty || 0), 0);
+                        } else {
+                            total = dat.simpleQty || 0;
+                        }
+                        return { id: d.id, ...dat, total, hasBatches }; 
+                    });
+                    Stock.render(); Ops.renderSourceList();
+                    const active = state.products.filter(p => !p.archived);
+                    document.getElementById('dash-total').innerText = active.length;
+                    document.getElementById('dash-low').innerText = active.filter(p => p.total <= (p.min||5)).length;
+                    UI.loader(false);
+                });
+                
+                onSnapshot(query(collection(db, "history"), orderBy("date", "desc")), s => {
+                    state.history = s.docs.map(d=>d.data()); Hist.renderShort(); Hist.render();
+                });
+
+                if(state.user.role === 'admin') {
+                    onSnapshot(collection(db, "users"), s => {
+                        state.allUsers = s.docs.map(d => ({id:d.id, ...d.data()}));
+                        Users.render();
+                    });
+                    document.getElementById('admin-panel-users').classList.remove('hidden');
+                    document.getElementById('admin-panel-danger').classList.remove('hidden');
+                }
+            },
+            updateAllCategoryDropdowns: () => {
+                const options = state.categories.map(c=>`<option value="${c}">${c}</option>`).join('');
+                const sf = document.getElementById('stock-filter-cat');
+                if(sf) sf.innerHTML = '<option value="">Wszystkie Kategorie</option>' + options;
+                const pc = document.getElementById('p-cat');
+                if(pc) pc.innerHTML = options;
+                const sc = document.getElementById('split-cat-filter');
+                if(sc) sc.innerHTML = '<option value="">Wszystkie</option>' + options;
+            },
+            router: (view, el, mode=null) => {
+                document.querySelectorAll('.view-section').forEach(x => x.classList.add('hidden'));
+                document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+                if(el) el.classList.add('active');
+                document.getElementById(`view-${view}`).classList.remove('hidden');
+                
+                if(view === 'split') {
+                    state.currentMode = mode;
+                    Ops.initSplit(mode);
+                }
+                const titles = { dashboard:'Pulpit Zarządczy', stock:'Stany Magazynowe', split: mode==='pz'?'Przyjęcie Towaru (PZ)':(mode==='wz'?'Wydanie Towaru (WZ)':'Tworzenie Dokumentu'), history:'Dziennik Operacji', settings:'Konfiguracja Systemu', data: 'Import / Eksport Danych' };
+                document.getElementById('page-title').innerText = titles[view] || 'ALCHI WMS';
+            },
+            logout: () => { localStorage.removeItem('alchi_user'); location.reload(); }
+        };
+
+        // --- STOCK MODULE ---
+        const Stock = {
+            render: () => {
+                const q = document.querySelector('#view-stock input').value.toLowerCase();
+                const catFilter = document.getElementById('stock-filter-cat').value;
+                const statusFilter = document.getElementById('stock-filter-status').value;
+
+                const h = state.products.filter(p => {
+                    const matchesSearch = (p.name.toLowerCase().includes(q) || (p.ean||'').includes(q));
+                    const matchesCat = !catFilter || p.cat === catFilter;
+                    let matchesStatus = false;
+                    if(statusFilter === 'all') matchesStatus = true;
+                    else if(statusFilter === 'archived') matchesStatus = p.archived;
+                    else matchesStatus = !p.archived;
+                    return matchesSearch && matchesCat && matchesStatus;
+                }).map(p => `
+                    <tr style="${p.archived ? 'opacity:0.6;' : ''}">
+                        <td>
+                            <div style="font-weight:600; color:var(--text-main);">${p.name}</div>
+                            <div style="font-size:0.8rem; color:var(--text-muted); font-family:monospace;">${p.ean||''}</div>
+                        </td>
+                        <td><span class="badge badge-gray">${p.cat}</span></td>
+                        <td>${p.hasBatches ? '<span class="badge badge-purple">LOT/Data</span>' : '<span class="badge badge-gray">Ilościowy</span>'}</td>
+                        <td>${p.archived ? '<span class="badge badge-dark">Archiwum</span>' : '<span class="badge badge-green">Aktywny</span>'}</td>
+                        <td><span class="badge ${p.total<=p.min?'badge-red':'badge-blue'}">${p.total} ${p.unit}</span></td>
+                        <td>${p.loc||'-'}</td>
+                        <td><button class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="Stock.openModal('${p.id}')">Edytuj</button></td>
+                    </tr>
+                `).join('');
+                document.querySelector('#stock-table tbody').innerHTML = h;
+            },
+            openModal: (id) => {
+                document.getElementById('modal-product').classList.add('active');
+                document.getElementById('form-product').reset();
+                const archBtn = document.getElementById('btn-archive');
+                const lotContainer = document.getElementById('p-lots-container');
+                
+                App.updateAllCategoryDropdowns();
+
+                if(id) {
+                    const p = state.products.find(x=>x.id===id);
+                    document.getElementById('p-id').value = p.id;
+                    document.getElementById('p-name').value = p.name;
+                    document.getElementById('p-cat').value = p.cat; 
+                    document.getElementById('p-unit').value = p.unit;
+                    document.getElementById('p-min').value = p.min;
+                    document.getElementById('p-loc').value = p.loc;
+                    document.getElementById('p-ean').value = p.ean;
+                    document.getElementById('p-has-batches').checked = p.hasBatches;
+                    
+                    archBtn.style.display = 'block';
+                    archBtn.innerText = p.archived ? 'Przywróć' : 'Archiwizuj';
+                    archBtn.className = p.archived ? 'btn btn-success' : 'btn btn-secondary';
+
+                    // Render Lots for Editing
+                    if(p.hasBatches) {
+                        if(!p.lots || !p.lots.length) {
+                            lotContainer.innerHTML = '<div style="color:#999; text-align:center; padding:20px;">Brak partii w magazynie.</div>';
+                        } else {
+                            lotContainer.innerHTML = '<table style="width:100%; font-size:0.85rem;"><thead><tr><th>LOT</th><th>Data</th><th>Ilość</th><th>Akcja</th></tr></thead><tbody>' + 
+                            p.lots.map((l, idx) => `
+                                <tr>
+                                    <td>${l.lot}</td>
+                                    <td>${l.exp}</td>
+                                    <td><b>${l.qty}</b></td>
+                                    <td style="display:flex; gap:8px;">
+                                        <button class="btn-icon-only" onclick="Stock.editLot(${idx})" title="Edytuj"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width:16px; height:16px;"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
+                                        <button class="btn-icon-only" onclick="Stock.deleteLot(${idx})" title="Usuń" style="color:var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width:16px; height:16px;"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+                                    </td>
+                                </tr>
+                            `).join('') + '</tbody></table>';
+                        }
+                    } else {
+                        // Simple Quantity Management
+                        lotContainer.innerHTML = `
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <span>Aktualny stan prosty: <b>${p.simpleQty} ${p.unit}</b></span>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <input type="number" id="simple-qty-edit" value="${p.simpleQty}" style="width:80px; padding:6px;">
+                                    <button class="btn btn-sm btn-primary" onclick="Stock.saveSimpleQty()">Korekta</button>
+                                </div>
+                            </div>
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">Zmiana tej wartości zostanie odnotowana w historii.</p>
+                        `;
+                    }
+
+                } else {
+                    // FIX: CRITICAL - Clear hidden ID input so we don't overwrite existing products
+                    document.getElementById('p-id').value = '';
+                    
+                    document.getElementById('p-has-batches').checked = true;
+                    archBtn.style.display = 'none';
+                    lotContainer.innerHTML = '<div style="color:#999;">Dostępne po utworzeniu produktu.</div>';
+                }
+            },
+            closeModal: () => document.getElementById('modal-product').classList.remove('active'),
+            
+            // --- LOT MANAGEMENT ---
+            editLot: (idx) => {
+                const pid = document.getElementById('p-id').value;
+                const p = state.products.find(x=>x.id===pid);
+                const l = p.lots[idx];
+                
+                document.getElementById('lot-edit-idx').value = idx;
+                document.getElementById('lot-edit-num').value = l.lot;
+                document.getElementById('lot-edit-exp').value = l.exp;
+                document.getElementById('lot-edit-qty').value = l.qty;
+                
+                document.getElementById('modal-lot-edit').classList.add('active');
+            },
+            saveLotChange: async () => {
+                const pid = document.getElementById('p-id').value;
+                const idx = parseInt(document.getElementById('lot-edit-idx').value);
+                const newLot = document.getElementById('lot-edit-num').value;
+                const newExp = document.getElementById('lot-edit-exp').value;
+                const newQty = Number(document.getElementById('lot-edit-qty').value);
+                
+                if(newQty < 0) return UI.toast('Ilość nie może być ujemna', 'error');
+                
+                UI.loader(true);
+                try {
+                    await runTransaction(db, async (t) => {
+                        const ref = doc(db, "products", pid);
+                        const snap = await t.get(ref);
+                        if(!snap.exists()) throw "Produkt nie istnieje";
+                        
+                        const data = snap.data();
+                        const lots = data.lots || [];
+                        
+                        if(idx >= lots.length) throw "Błąd indeksu partii";
+                        
+                        const oldQty = lots[idx].qty;
+                        lots[idx] = { lot: newLot, exp: newExp, qty: newQty };
+                        
+                        t.update(ref, { lots: lots });
+                        t.set(doc(collection(db, "history")), {
+                            type: "korekta", doc: "Korekta Ręczna LOT", 
+                            date: serverTimestamp(), user: state.user.fullName, 
+                            items: [{name: data.name, qty: newQty, lot: newLot, oldQty: oldQty, note: "Zmiana parametrów partii"}]
+                        });
+                    });
+                    UI.toast('Zaktualizowano partię');
+                    document.getElementById('modal-lot-edit').classList.remove('active');
+                    // Refresh main modal
+                    Stock.openModal(pid);
+                } catch(e) { UI.toast(e.message || e, 'error'); }
+                UI.loader(false);
+            },
+            deleteLot: async (idx) => {
+                if(!confirm("Czy na pewno usunąć tę partię? Całkowity stan magazynowy zmniejszy się.")) return;
+                const pid = document.getElementById('p-id').value;
+                
+                UI.loader(true);
+                try {
+                      await runTransaction(db, async (t) => {
+                        const ref = doc(db, "products", pid);
+                        const snap = await t.get(ref);
+                        const data = snap.data();
+                        const lots = data.lots || [];
+                        const removed = lots.splice(idx, 1)[0];
+                        
+                        t.update(ref, { lots: lots });
+                        t.set(doc(collection(db, "history")), {
+                            type: "korekta", doc: "Usunięcie Partii", 
+                            date: serverTimestamp(), user: state.user.fullName, 
+                            items: [{name: data.name, qty: 0, lot: removed.lot, oldQty: removed.qty, note: "Usunięcie całej partii"}]
+                        });
+                      });
+                      UI.toast('Usunięto partię');
+                      Stock.openModal(pid);
+                } catch(e) { UI.toast(e, 'error'); }
+                UI.loader(false);
+            },
+            saveSimpleQty: async () => {
+                const pid = document.getElementById('p-id').value;
+                const newQty = Number(document.getElementById('simple-qty-edit').value);
+                
+                UI.loader(true);
+                try {
+                    await runTransaction(db, async (t) => {
+                        const ref = doc(db, "products", pid);
+                        const snap = await t.get(ref);
+                        const data = snap.data();
+                        const oldQty = data.simpleQty || 0;
+                        
+                        t.update(ref, { simpleQty: newQty });
+                        t.set(doc(collection(db, "history")), {
+                            type: "korekta", doc: "Korekta Ilościowa", 
+                            date: serverTimestamp(), user: state.user.fullName, 
+                            items: [{name: data.name, qty: newQty, oldQty: oldQty, note: "Ręczna zmiana stanu prostego"}]
+                        });
+                    });
+                    UI.toast('Zaktualizowano stan');
+                    Stock.openModal(pid);
+                } catch(e) { UI.toast(e, 'error'); }
+                UI.loader(false);
+            },
+
+            save: async () => {
+                const id = document.getElementById('p-id').value;
+                const d = {
+                    name: document.getElementById('p-name').value,
+                    cat: document.getElementById('p-cat').value,
+                    unit: document.getElementById('p-unit').value,
+                    min: Number(document.getElementById('p-min').value),
+                    loc: document.getElementById('p-loc').value,
+                    ean: document.getElementById('p-ean').value,
+                    hasBatches: document.getElementById('p-has-batches').checked
+                };
+                if(!d.name) return UI.toast('Brak nazwy produktu', 'error');
+                
+                UI.loader(true);
+                if(id) await updateDoc(doc(db, "products", id), d);
+                else { 
+                    d.lots=[]; 
+                    d.simpleQty=0;
+                    d.archived=false; 
+                    await addDoc(collection(db, "products"), d); 
+                }
+                UI.loader(false);
+                Stock.closeModal(); UI.toast('Zapisano pomyślnie');
+            },
+            toggleArchive: async () => {
+                const id = document.getElementById('p-id').value;
+                if(!id) return;
+                const p = state.products.find(x=>x.id===id);
+                if(confirm(p.archived ? 'Przywrócić produkt?' : 'Zarchiwizować produkt? (Zniknie z list wyboru)')) {
+                    await updateDoc(doc(db, "products", id), { archived: !p.archived });
+                    Stock.closeModal(); UI.toast(p.archived ? 'Przywrócono' : 'Zarchiwizowano');
+                }
+            }
+        };
+
+        // --- OPERATIONS (SPLIT SCREEN) ---
+        const Ops = {
+            initSplit: (mode) => {
+                state.basket = [];
+                document.getElementById('split-doc-ref').value = '';
+                document.getElementById('split-doc-title').innerText = mode==='pz'?'Nowe Przyjęcie (PZ)':'Nowe Wydanie (WZ)';
+                App.updateAllCategoryDropdowns();
+                Ops.renderSourceList();
+                Ops.renderBasket();
+            },
+            renderSourceList: () => {
+                if(!state.currentMode) return;
+                const q = document.getElementById('split-search').value.toLowerCase();
+                const c = document.getElementById('split-cat-filter').value;
+                const grid = document.getElementById('split-source-grid');
+                
+                const filtered = state.products.filter(p => !p.archived && (p.name.toLowerCase().includes(q) || (p.ean||'').includes(q)) && (!c || p.cat===c));
+                
+                grid.innerHTML = filtered.map(p => {
+                    if(state.currentMode === 'wz' && p.total <= 0) return '';
+                    const fillPercent = Math.min(100, (p.total / (p.min*3)) * 100);
+                    return `
+                    <div class="product-card ${p.total<=p.min?'low-stock':''}" onclick="Ops.openItemModal('${p.id}')">
+                        <h4>${p.name}</h4>
+                        <div class="meta">
+                            <span>${p.ean||'--'}</span>
+                            <span>${p.loc||'--'}</span>
+                        </div>
+                        <div class="stock-display">
+                            ${p.total} <span style="font-size:0.8rem; font-weight:500; color:var(--text-muted)">${p.unit}</span>
+                        </div>
+                        <div class="stock-bar"><div class="stock-fill" style="width:${fillPercent}%"></div></div>
+                        ${!p.hasBatches ? '<div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">(Ilościowy)</div>' : ''}
+                    </div>`;
+                }).join('');
+            },
+            openItemModal: (pid) => {
+                const p = state.products.find(x=>x.id===pid);
+                document.querySelector('#modal-add-item .modal-title').innerText = p.name;
+                document.getElementById('modal-item-pid').value = pid;
+                document.getElementById('modal-stock-value').innerText = `${p.total} ${p.unit}`;
+                
+                document.getElementById('inp-common-qty').value = 1;
+                document.getElementById('inp-pz-lot').value = '';
+                document.getElementById('inp-pz-exp').value = '';
+
+                const lotContainer = document.getElementById('modal-fields-lot-tracking');
+                
+                if (!p.hasBatches) {
+                    lotContainer.classList.add('hidden');
+                } else {
+                    lotContainer.classList.remove('hidden');
+                    if(state.currentMode === 'pz') {
+                        document.getElementById('modal-fields-pz').classList.remove('hidden');
+                        document.getElementById('modal-fields-wz').classList.add('hidden');
+                    } else {
+                        document.getElementById('modal-fields-pz').classList.add('hidden');
+                        document.getElementById('modal-fields-wz').classList.remove('hidden');
+                        
+                        const sel = document.getElementById('inp-wz-lot');
+                        sel.innerHTML = p.lots.map((l,i) => `<option value="${i}">LOT: ${l.lot} (Ważn: ${l.exp}) - Dostępne: ${l.qty}</option>`).join('');
+                        if(!p.lots.length) return UI.toast('Błąd danych: Brak partii mimo stanu dodatniego', 'error');
+                    }
+                }
+                document.getElementById('modal-add-item').classList.add('active');
+            },
+            closeModal: () => document.getElementById('modal-add-item').classList.remove('active'),
+            addItemToBasket: () => {
+                const pid = document.getElementById('modal-item-pid').value;
+                const p = state.products.find(x=>x.id===pid);
+                
+                let item = { pid, name: p.name };
+                item.qty = Number(document.getElementById('inp-common-qty').value);
+                
+                if(item.qty <= 0) return UI.toast('Ilość musi być większa od 0', 'error');
+
+                if (!p.hasBatches) {
+                      if(state.currentMode === 'wz') {
+                          const inBasket = state.basket.filter(b=>b.pid===pid).reduce((a,b)=>a+b.qty,0);
+                          if(item.qty + inBasket > p.total) return UI.toast(`Przekroczono stan! Dostępne: ${p.total}`, 'error');
+                      }
+                } else {
+                    if(state.currentMode === 'pz') {
+                        item.lot = document.getElementById('inp-pz-lot').value;
+                        item.exp = document.getElementById('inp-pz-exp').value;
+                        if(!item.lot || !item.exp) return UI.toast('Wymagany numer LOT i data ważności', 'error');
+                    } else { // WZ
+                        const lIdx = document.getElementById('inp-wz-lot').value;
+                        const lotData = p.lots[lIdx];
+                        item.lot = lotData.lot;
+                        item.exp = lotData.exp;
+                        
+                        const existingInBasket = state.basket.filter(b => b.pid === pid && b.lot === item.lot).reduce((acc, curr) => acc + curr.qty, 0);
+                        if(existingInBasket + item.qty > lotData.qty) return UI.toast(`Przekroczono stan partii! Dostępne: ${lotData.qty}`, 'error');
+                    }
+                }
+                
+                const existingIndex = state.basket.findIndex(b => b.pid === item.pid && b.lot === item.lot && b.exp === item.exp);
+                if(existingIndex >= 0) {
+                    state.basket[existingIndex].qty += item.qty;
+                    UI.toast('Zaktualizowano ilość w koszyku');
+                } else {
+                    state.basket.push(item);
+                    UI.toast('Dodano do listy');
+                }
+                Ops.renderBasket();
+                Ops.closeModal();
+            },
+            renderBasket: () => {
+                const list = document.getElementById('split-basket-list');
+                if(!state.basket.length) {
+                    list.innerHTML = `<div class="basket-empty"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="48"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>Koszyk jest pusty.</div>`;
+                    document.getElementById('split-total-items').innerText = '0';
+                    return;
+                }
+                list.innerHTML = state.basket.map((item, i) => `
+                    <div class="basket-item">
+                        <div class="basket-item-info">
+                            <h5>${item.name}</h5>
+                            <div class="basket-item-meta">${item.lot ? `LOT: ${item.lot} ${item.exp?`(${item.exp})`:''}` : 'Stan Ogólny (Ilościowy)'}</div>
+                        </div>
+                        <div class="basket-item-actions">
+                            <span class="basket-qty">${item.qty}</span>
+                            <button class="btn-icon-only" onclick="Ops.remItem(${i})" style="color:var(--danger)">&times;</button>
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('split-total-items').innerText = state.basket.length;
+            },
+            remItem: (i) => { state.basket.splice(i,1); Ops.renderBasket(); },
+            
+            confirmDoc: async () => {
+                if(!state.basket.length) return UI.toast('Dokument jest pusty', 'error');
+                const ref = document.getElementById('split-doc-ref').value || (state.currentMode.toUpperCase() + '/' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '/' + Math.floor(Math.random()*1000));
+                
+                UI.loader(true);
+                try {
+                    await runTransaction(db, async (t) => {
+                        const uniquePids = [...new Set(state.basket.map(b => b.pid))];
+                        const reads = uniquePids.map(pid => t.get(doc(db, "products", pid)));
+                        const snapshots = await Promise.all(reads);
+                        
+                        const productsMap = {};
+                        snapshots.forEach(snap => {
+                            if(snap.exists()) {
+                                productsMap[snap.id] = { ref: snap.ref, data: snap.data() };
+                            }
+                        });
+
+                        for(const item of state.basket) {
+                            if(!productsMap[item.pid]) throw `Produkt ${item.name} nie istnieje w bazie!`;
+                            const pData = productsMap[item.pid].data;
+                            const isBatch = (pData.hasBatches !== undefined) ? pData.hasBatches : true;
+
+                            if (isBatch) {
+                                let lots = pData.lots || [];
+                                if(state.currentMode === 'pz') {
+                                    // FIX: Check if lot exists and aggregate instead of always pushing new
+                                    const existingLot = lots.find(l => l.lot === item.lot && l.exp === item.exp);
+                                    if(existingLot) {
+                                        existingLot.qty += item.qty;
+                                    } else {
+                                        lots.push({ lot: item.lot, exp: item.exp, qty: item.qty });
+                                    }
+                                } else {
+                                    const idx = lots.findIndex(l => l.lot === item.lot && l.exp === item.exp);
+                                    if(idx === -1 || lots[idx].qty < item.qty) throw `Błąd stanu dla ${item.name} (Partia nie istnieje lub brak ilości)`;
+                                    lots[idx].qty -= item.qty;
+                                    if(lots[idx].qty <= 0) lots.splice(idx, 1);
+                                }
+                                pData.lots = lots; 
+                            } else {
+                                let currentSimple = pData.simpleQty || 0;
+                                if(state.currentMode === 'pz') {
+                                    currentSimple += item.qty;
+                                } else {
+                                    if(currentSimple < item.qty) throw `Brak wystarczającego stanu ogólnego dla ${item.name}`;
+                                    currentSimple -= item.qty;
+                                }
+                                pData.simpleQty = currentSimple; 
+                            }
+                            productsMap[item.pid].modified = true;
+                        }
+
+                        Object.keys(productsMap).forEach(pid => {
+                            if(productsMap[pid].modified) {
+                                const { ref, data } = productsMap[pid];
+                                if(data.hasBatches !== undefined && !data.hasBatches) {
+                                    t.update(ref, { simpleQty: data.simpleQty });
+                                } else {
+                                    t.update(ref, { lots: data.lots });
+                                }
+                            }
+                        });
+                        
+                        t.set(doc(collection(db, "history")), {
+                            type: state.currentMode, doc: ref, date: serverTimestamp(), user: state.user.fullName, items: state.basket
+                        });
+                    });
+                    
+                    UI.toast(state.currentMode==='pz'?'Przyjęto towar na stan':'Wydano towar z magazynu');
+                    state.basket = []; Ops.renderBasket(); document.getElementById('split-doc-ref').value = '';
+                } catch(e) { 
+                    UI.toast(typeof e === 'string' ? e : e.message, 'error'); 
+                    console.error(e); 
+                }
+                UI.loader(false);
+            }
+        };
+
+        // --- USER MANAGEMENT (NEW) ---
+        const Users = {
+            render: () => {
+                const tbody = document.querySelector('#users-table tbody');
+                tbody.innerHTML = state.allUsers.map(u => `
+                    <tr>
+                        <td style="font-weight:600;">${u.fullName}</td>
+                        <td style="color:var(--text-muted);">${u.username}</td>
+                        <td>${u.role==='admin'?'<span class="badge badge-purple">Admin</span>':'<span class="badge badge-gray">Użytkownik</span>'}</td>
+                        <td>
+                            ${u.username !== state.user.username ? 
+                            `<button class="btn-icon-only" onclick="Users.del('${u.id}')" style="color:var(--danger)">&times;</button>` : 
+                            '<span style="font-size:0.8rem; color:#aaa;">(To Ty)</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            },
+            add: async () => {
+                const name = document.getElementById('u-new-name').value;
+                const login = document.getElementById('u-new-login').value;
+                const pass = document.getElementById('u-new-pass').value;
+                const role = document.getElementById('u-new-role').value;
+                
+                if(!name || !login || !pass) return UI.toast('Wypełnij wszystkie pola', 'error');
+                
+                const q = query(collection(db, "users"), where("username", "==", login));
+                const snap = await getDocs(q);
+                if(!snap.empty) return UI.toast('Login jest już zajęty', 'error');
+                
+                await addDoc(collection(db, "users"), {
+                    fullName: name, username: login, password: pass, role: role, createdAt: serverTimestamp()
+                });
+                
+                document.getElementById('modal-user-add').classList.remove('active');
+                document.getElementById('u-new-name').value = '';
+                document.getElementById('u-new-login').value = '';
+                document.getElementById('u-new-pass').value = '';
+                UI.toast('Dodano użytkownika');
+            },
+            del: async (id) => {
+                if(confirm('Usunąć tego użytkownika?')) {
+                    await deleteDoc(doc(db, "users", id));
+                    UI.toast('Użytkownik usunięty');
+                }
+            }
+        };
+
+        // --- DATA / CSV ---
+        const Data = {
+            exportCSV: () => {
+                let csv = "Nazwa,Kategoria,EAN,Lokalizacja,MinStan,Jednostka,Typ,IloscCalkowita\n";
+                state.products.forEach(p => {
+                    csv += `"${p.name}",${p.cat},${p.ean},${p.loc},${p.min},${p.unit},${p.hasBatches?'Partie':'Prosty'},${p.total}\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `ALCHI_Export_${new Date().toISOString().slice(0,10)}.csv`;
+                link.click();
+            },
+            importCSV: async () => {
+                const file = document.getElementById('csv-file-input').files[0];
+                if(!file) return UI.toast("Wybierz plik CSV", "error");
+                
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    UI.loader(true);
+                    try {
+                        const lines = e.target.result.split('\n');
+                        let count = 0;
+                        const batch = writeBatch(db);
+                        let opCount = 0;
+
+                        for(let i = 1; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if(!line) continue;
+                            const cols = line.split(',');
+                            if(cols.length < 4) continue; 
+                            
+                            // FIX: Determine batch tracking from CSV column 6 (Typ)
+                            const typeCol = cols[6] ? cols[6].trim().toLowerCase() : '';
+                            const isBatch = typeCol.includes('partie') || typeCol === ''; // Default to batches if empty
+
+                            const data = {
+                                name: cols[0]?.replace(/"/g, '') || 'Produkt Import',
+                                cat: cols[1] || 'Ogólna',
+                                ean: cols[2] || '',
+                                loc: cols[3] || '',
+                                min: parseInt(cols[4]) || 5,
+                                unit: cols[5] || 'szt',
+                                lots: [],
+                                simpleQty: 0,
+                                hasBatches: isBatch,
+                                archived: false
+                            };
+                            
+                            const ref = doc(collection(db, "products"));
+                            batch.set(ref, data);
+                            opCount++;
+                            count++;
+                            
+                            if(opCount >= 450) {
+                                await batch.commit();
+                                opCount = 0;
+                            }
+                        }
+                        if(opCount > 0) await batch.commit();
+                        
+                        UI.toast(`Zaimportowano ${count} produktów`);
+                    } catch(err) { UI.toast("Błąd pliku CSV", "error"); console.error(err); }
+                    UI.loader(false);
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        const Hist = {
+            renderShort: () => {
+                document.querySelector('#dash-history-table tbody').innerHTML = state.history.slice(0,5).map(h => `<tr><td><span class="badge badge-gray">${h.type}</span></td><td>${h.doc}</td><td>${h.date?.toDate().toLocaleDateString()||'-'}</td><td>${h.user}</td></tr>`).join('');
+            },
+            render: (q='') => {
+                q = q.toLowerCase();
+                document.querySelector('#full-history-table tbody').innerHTML = state.history.filter(h => h.doc.toLowerCase().includes(q) || h.user.toLowerCase().includes(q)).map(h => `
+                    <tr>
+                        <td><span class="badge badge-gray">${h.type}</span></td>
+                        <td><b>${h.doc}</b></td>
+                        <td>${h.date?.toDate().toLocaleString()||'-'}</td>
+                        <td>${h.user}</td>
+                        <td><button class="btn btn-sm btn-secondary" onclick="Hist.showDetail('${h.doc}')">Podgląd</button></td>
+                    </tr>
+                `).join('');
+            },
+            showDetail: (docId) => {
+                const h = state.history.find(x => x.doc === docId);
+                if(!h) return;
+                
+                document.getElementById('hist-detail-meta').innerHTML = `
+                    Dokument: <strong>${h.doc}</strong> | Typ: ${h.type} <br>
+                    Data: ${h.date?.toDate().toLocaleString()} | Użytkownik: ${h.user}
+                `;
+
+                let html = '';
+                if(h.items && h.items.length > 0) {
+                    html = h.items.map(i => `
+                        <tr>
+                            <td><b>${i.name}</b></td>
+                            <td><span class="badge badge-blue">${i.qty}</span></td>
+                            <td>${i.lot ? `LOT: ${i.lot} ${i.exp?`(${i.exp})`:''}` : '<span style="color:#888; font-style:italic;">Stan ogólny</span>'} ${i.note ? `<br><small style="color:var(--text-muted)">(${i.note})</small>` : ''}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    html = '<tr><td colspan="3" style="text-align:center; padding:20px;">Brak szczegółowych danych</td></tr>';
+                }
+                
+                document.getElementById('hist-detail-items').innerHTML = html;
+                document.getElementById('modal-history-details').classList.add('active');
+            }
+        };
+
+        const Settings = {
+            render: () => document.getElementById('cat-list').innerHTML = state.categories.map((c,i)=>`<div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid #eee;align-items:center;"><span>${c}</span><button class="btn-icon-only" style="color:var(--danger);" onclick="Settings.del(${i})">&times;</button></div>`).join(''),
+            addCat: async () => { const v=document.getElementById('new-cat-in').value; if(v) await updateDoc(doc(db,"config","general"),{categories:[...state.categories,v]}); document.getElementById('new-cat-in').value=''; },
+            del: async (i) => { if(confirm('Usunąć kategorię?')) await updateDoc(doc(db,"config","general"),{categories:state.categories.filter((_,idx)=>idx!==i)}); },
+            
+            clearDB: async () => {
+                const pass = prompt("POTWIERDZENIE ADMINA: Podaj hasło aby wyczyścić bazę:");
+                if(pass !== state.user.password) return UI.toast('Błędne hasło', 'error');
+                
+                if(!confirm("UWAGA! To usunie WSZYSTKIE produkty i historię. Czy kontynuować?")) return;
+                
+                UI.loader(true);
+                try {
+                    const deleteCollection = async (coll) => {
+                        const q = query(collection(db, coll));
+                        const snapshot = await getDocs(q);
+                        const batchSize = 400; 
+                        let batch = writeBatch(db);
+                        let count = 0;
+                        
+                        for(const doc of snapshot.docs) {
+                             batch.delete(doc.ref);
+                             count++;
+                             if(count >= batchSize) {
+                                 await batch.commit();
+                                 batch = writeBatch(db);
+                                 count = 0;
+                             }
+                        }
+                        if(count > 0) await batch.commit();
+                    }
+
+                    await deleteCollection('products');
+                    await deleteCollection('history');
+                    
+                    UI.toast('Baza danych została wyczyszczona');
+                } catch(e) {
+                    console.error(e);
+                    UI.toast('Błąd podczas czyszczenia: ' + e.message, 'error');
+                }
+                UI.loader(false);
+            }
+        };
+
+        window.App = App; window.Stock = Stock; window.Ops = Ops; window.Hist = Hist; window.Settings = Settings; window.Data = Data; window.Users = Users;
+        App.init();
+    </script>
+</body>
+</html>
