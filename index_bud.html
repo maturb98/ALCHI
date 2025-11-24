@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATP BUDOWNICTWO</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        /* --- STYLES COPIED & ADAPTED FROM CORE WMS --- */
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #f59e0b; /* Orange for Construction Context */
+            --accent-dark: #d97706;
+            --background: #f3f4f6;
+            --surface: #ffffff;
+            --border: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --danger: #ef4444;
+            --success: #10b981;
+            --info: #3b82f6;
+            
+            --sidebar-width: 280px;
+            --header-height: 64px;
+            --radius: 8px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        * { box-sizing: border-box; outline: none; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-main); font-size: 14px; height: 100vh; overflow: hidden; display: flex; }
+        
+        /* Layout */
+        aside { width: var(--sidebar-width); background: var(--primary); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .brand { height: var(--header-height); display: flex; align-items: center; padding: 0 24px; font-weight: 800; font-size: 1.25rem; border-bottom: 1px solid var(--primary-light); background: rgba(0,0,0,0.2); }
+        .brand span { color: var(--accent); margin-left: 8px; }
+        
+        .nav-menu { flex: 1; overflow-y: auto; padding: 20px 12px; }
+        .nav-header { text-transform: uppercase; font-size: 0.7rem; color: #94a3b8; font-weight: 700; margin: 20px 12px 8px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #cbd5e1; border-radius: var(--radius); margin-bottom: 4px; cursor: pointer; text-decoration: none; transition: 0.2s; }
+        .nav-item:hover { background: var(--primary-light); color: white; }
+        .nav-item.active { background: var(--accent); color: white; }
+        .nav-item svg { width: 20px; height: 20px; opacity: 0.8; }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        header { height: var(--header-height); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 32px; justify-content: space-between; }
+        .page-title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        .content-scroll { flex: 1; overflow-y: auto; padding: 24px; max-width: 1600px; width: 100%; margin: 0 auto; }
+
+        /* Components */
+        .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 24px; margin-bottom: 24px; }
+        .btn { padding: 10px 20px; border-radius: var(--radius); border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 0.9rem; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-dark); }
+        .btn-secondary { background: white; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-secondary:hover { background: #f9fafb; }
+        .btn-danger { background: #fee2e2; color: var(--danger); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-info { background: #dbeafe; color: var(--info); border:1px solid #bfdbfe; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-icon-only { padding: 6px; border-radius: 6px; color: var(--text-muted); background: white; border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .btn-icon-only:hover { background: #f1f5f9; color: var(--primary); transform: translateY(-1px); }
+        .btn-icon-only.danger:hover { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
+        .btn-icon-only svg { width: 16px; height: 16px; }
+        
+        .search-input { width: 100%; padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--radius); }
+
+        /* Tables */
+        .table-wrapper { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 0.9rem; }
+        th { text-align: left; padding: 14px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; }
+        td { padding: 14px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+
+        /* Project Cards Grid */
+        .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .project-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
+        .project-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--accent); }
+        .project-status { position: absolute; top: 16px; left: 16px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 99px; }
+        .status-active { background: #ecfdf5; color: var(--success); }
+        .status-closed { background: #f3f4f6; color: var(--text-muted); }
+        
+        .project-card.closed { opacity: 0.7; background: #fafafa; }
+        .project-card.closed:hover { opacity: 1; }
+
+        .card-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; z-index: 5; }
+        
+        /* Progress Bars */
+        .progress-container { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 8px; display:flex; }
+        .bar-issued { background: var(--accent); height: 100%; }
+        .bar-consumed { background: var(--success); height: 100%; }
+
+        /* Search Results in Modal */
+        .search-results { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-top: none; background: white; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; display: none; }
+        .search-results.active { display: block; }
+        .search-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        .search-item:hover { background: #f8fafc; }
+        .search-item.selected { background: #eff6ff; color: var(--accent-dark); font-weight: 600; }
+        .search-item strong { display: block; color: var(--text-main); }
+        .search-item small { color: var(--text-muted); }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(2px); }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: white; width: 90%; max-width: 600px; border-radius: 12px; padding: 32px; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
+        .modal-xl { max-width: 900px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; }
+
+        .hidden { display: none !important; }
+        #loader { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.3s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        #toast-container { position: fixed; top: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 12px; }
+        .toast { padding: 16px 24px; background: white; border-left: 4px solid #ccc; box-shadow: var(--shadow-lg); border-radius: 8px; font-weight: 500; animation: slideInRight 0.3s; }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="loader"><div class="spinner"></div></div>
+    <div id="toast-container"></div>
+
+    <!-- Login Check -->
+    <div id="login-overlay" class="modal-overlay" style="background:var(--primary); z-index:9999;">
+        <div class="modal-box" style="text-align: center; max-width: 400px;">
+            <h1 style="color:var(--primary);">Dostęp Zabroniony</h1>
+            <p>Zaloguj się najpierw w głównym panelu.</p>
+            <a href="index.html" class="btn btn-primary" style="width:100%; justify-content:center;">Przejdź do logowania</a>
+        </div>
+    </div>
+
+    <aside>
+        <div class="brand">ATP <span>BUDOWNICTWO</span></div>
+        <div class="nav-menu">
+            <div class="nav-header">Nawigacja</div>
+            <a href="index.html" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                Wróć do Magazynu
+            </a>
+            <div class="nav-item active" onclick="App.setView('list')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                Lista Budów
+            </div>
+            
+            <div id="nav-project-details" class="hidden">
+                <div class="nav-header">Wybrana Budowa</div>
+                <div class="nav-item active" style="background:rgba(255,255,255,0.1); cursor:default;">
+                    <span id="nav-project-name">...</span>
+                </div>
+                <div class="nav-item" onclick="App.setView('list')" style="margin-top:10px; font-size:0.85rem;">
+                    &larr; Wróć do listy
+                </div>
+            </div>
+        </div>
+        <div style="padding:20px; border-top:1px solid var(--primary-light);">
+            <div style="font-size:0.8rem; color:#94a3b8;">Zalogowany jako:</div>
+            <div id="user-display" style="font-weight:600;">...</div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div class="page-title" id="page-title">Budowy i Inwestycje</div>
+            <button class="btn btn-primary" id="btn-add-site" onclick="Sites.openAddModal()">+ Nowa Budowa</button>
+        </header>
+
+        <!-- VIEW: Project List -->
+        <div id="view-list" class="content-scroll">
+            <div class="project-grid" id="sites-container"></div>
+        </div>
+
+        <!-- VIEW: Project Details -->
+        <div id="view-details" class="content-scroll hidden">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <h2 style="margin:0;" id="detail-name">Nazwa Budowy</h2>
+                        <p style="color:var(--text-muted); margin:4px 0 0 0;" id="detail-address">Adres</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="badge status-active" id="detail-status" style="font-size:0.9rem;">AKTYWNA</span>
+                    </div>
+                </div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+                
+                <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px;">
+                    <button class="btn btn-primary" onclick="Mat.openPlanModal()">+ Zaplanuj Towar</button>
+                    <button class="btn btn-secondary" style="border-color:var(--accent); color:var(--accent-dark);" onclick="Mat.openIssueModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        Wydaj z Planu (WZ)
+                    </button>
+                    <button class="btn btn-secondary" onclick="Mat.openConsumeModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Zgłoś Zużycie
+                    </button>
+                    <button class="btn btn-info" onclick="Mat.openReturnModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" /></svg>
+                        Zwrot (RW)
+                    </button>
+
+                    <div style="flex:1"></div>
+                    <button class="btn btn-secondary" title="Drukuj Listę Planowaną" onclick="Mat.printPlan()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                    </button>
+                    <button class="btn btn-secondary" onclick="Sites.openSettleModal(state.currentSiteId)">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Rozlicz / Raport
+                    </button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="materials-table">
+                        <thead>
+                            <tr>
+                                <th>Produkt</th>
+                                <th>Stan Magazynowy</th>
+                                <th>Zaplanowano</th>
+                                <th>Wydano na budowę</th>
+                                <th>Postęp Wydania</th>
+                                <th>Zużyto (Deklaracja)</th>
+                                <th>Pozostało na stanie</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add Site -->
+    <div class="modal-overlay" id="modal-add-site">
+        <div class="modal-box">
+            <h3 style="margin-top:0">Nowa Budowa</h3>
+            <div class="form-group">
+                <label>Nazwa Inwestycji</label>
+                <input type="text" id="new-site-name">
+            </div>
+            <div class="form-group">
+                <label>Adres / Lokalizacja</label>
+                <input type="text" id="new-site-addr">
+            </div>
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-add-site').classList.remove('active')">Anuluj</button>
+                <button class="btn btn-primary" onclick="Sites.create()">Utwórz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Site -->
+    <div class="modal-overlay" id="modal-edit-site">
+        <div class="modal-box">
+            <h3 style="margin-top:0">Edytuj Budowę</h3>
+            <input type="hidden" id="edit-site-id">
+            <div class="form-group">
+                <label>Nazwa Inwestycji</label>
+                <input type="text" id="edit-site-name">
+            </div>
+            <div class="form-group">
+                <label>Adres / Lokalizacja</label>
+                <input type="text" id="edit-site-addr">
+            </div>
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-edit-site').classList.remove('active')">Anuluj</button>
+                <button class="btn btn-primary" onclick="Sites.saveEdit()">Zapisz Zmiany</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Settlement / Report -->
+    <div class="modal-overlay" id="modal-settle">
+        <div class="modal-box modal-xl">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0">Rozliczenie Budowy</h3>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="Sites.downloadReportCSV()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        CSV (Excel)
+                    </button>
+                    <button class="btn btn-primary" onclick="Sites.downloadReportPDF()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                        PDF (Druk)
+                    </button>
+                </div>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Podsumowanie bilansu oraz historia operacji.</p>
+            
+            <div class="table-wrapper" style="max-height:500px; overflow-y:auto;">
+                <table id="settle-table">
+                    <thead>
+                        <tr>
+                            <th>Produkt</th>
+                            <th>Zaplanowano</th>
+                            <th>Wydano</th>
+                            <th>Zużyto</th>
+                            <th>Stan na budowie</th>
+                            <th>Bilans (Plan vs Wydano)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-settle').classList.remove('active')">Zamknij</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Plan Material -->
+    <div class="modal-overlay" id="modal-plan">
+        <div class="modal-box">
+            <h3 style="margin-top:0">Zaplanuj Materiał</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Wyszukaj produkt, aby dodać go do listy zapotrzebowania.</p>
+            
+            <div class="form-group" style="position:relative;">
+                <label>Wyszukaj Produkt (Nazwa lub EAN)</label>
+                <input type="text" id="plan-search" placeholder="Zacznij wpisywać..." onkeyup="Mat.renderPlanSearch()">
+                <div id="plan-results" class="search-results"></div>
+                
+                <input type="hidden" id="plan-selected-pid">
+                <input type="hidden" id="plan-selected-name">
+                <input type="hidden" id="plan-selected-unit">
+                
+                <div id="plan-selected-display" style="margin-top:8px; font-weight:bold; color:var(--accent-dark); min-height:20px;"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Ilość Planowana</label>
+                <input type="number" id="plan-qty" min="1">
+            </div>
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-plan').classList.remove('active')">Anuluj</button>
+                <button class="btn btn-primary" onclick="Mat.savePlan()">Dodaj do Planu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Issue Material (WZ) -->
+    <div class="modal-overlay" id="modal-issue">
+        <div class="modal-box">
+            <h3 style="margin-top:0; color:var(--accent-dark);">Wydanie Materiału (WZ)</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Wybierz towar z listy zaplanowanych materiałów.</p>
+            
+            <div class="form-group">
+                <label>Produkt z Planu</label>
+                <select id="issue-prod-select" onchange="Mat.onIssueProdChange()"></select>
+            </div>
+
+            <div id="issue-lot-section" class="hidden" style="background:#f8fafc; padding:12px; border-radius:6px; border:1px solid var(--border); margin-bottom:16px;">
+                <label style="font-size:0.8rem; font-weight:700; margin-bottom:4px; display:block;">Wybierz Partię (Magazyn Główny)</label>
+                <select id="issue-lot-select" style="width:100%"></select>
+            </div>
+            
+            <div class="form-group">
+                <label>Ilość do Wydania</label>
+                <input type="number" id="issue-qty" min="1">
+            </div>
+
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-issue').classList.remove('active')">Anuluj</button>
+                <button class="btn btn-primary" onclick="Mat.confirmIssue()">Zatwierdź WZ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Return Material (RW) -->
+    <div class="modal-overlay" id="modal-return">
+        <div class="modal-box">
+            <h3 style="margin-top:0; color:var(--info);">Zwrot do Magazynu (RW)</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Zwracaj tylko towar nieuszkodzony, który fizycznie znajduje się na budowie (Wydano - Zużyto).</p>
+            
+            <div class="form-group">
+                <label>Produkt do zwrotu</label>
+                <select id="return-prod-select" onchange="Mat.onReturnProdChange()"></select>
+            </div>
+
+            <div id="return-lot-section" class="hidden" style="background:#eff6ff; padding:12px; border-radius:6px; border:1px solid #bfdbfe; margin-bottom:16px;">
+                <label style="font-size:0.8rem; font-weight:700; margin-bottom:4px; display:block;">Dane Partii (Wymagane)</label>
+                <input type="text" id="return-lot-input" placeholder="Wpisz nr partii (LOT)" style="width:100%; margin-bottom:8px;">
+                <input type="text" id="return-lot-exp" placeholder="Data Ważności (Opcjonalne, jeśli nowa partia)" style="width:100%;">
+                <small style="display:block; margin-top:4px; color:var(--text-muted);">Jeśli partia istnieje, stan zostanie zwiększony.</small>
+            </div>
+
+            <div class="form-group">
+                <label>Ilość Zwracana</label>
+                <input type="number" id="return-qty" min="1">
+            </div>
+            
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-return').classList.remove('active')">Anuluj</button>
+                <button class="btn btn-info" onclick="Mat.confirmReturn()">Zatwierdź RW</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Consume -->
+    <div class="modal-overlay" id="modal-consume">
+        <div class="modal-box">
+            <h3 style="margin-top:0;">Deklaracja Zużycia</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Potwierdź wbudowanie materiału.</p>
+            
+            <div class="form-group">
+                <label>Produkt (tylko wydane)</label>
+                <select id="cons-prod-select"></select>
+            </div>
+            <div class="form-group">
+                <label>Ilość Zużyta</label>
+                <input type="number" id="cons-qty" min="1">
+            </div>
+            
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-consume').classList.remove('active')">Anuluj</button>
+                <button class="btn btn-success" onclick="Mat.confirmConsume()">Zatwierdź Zużycie</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, runTransaction, serverTimestamp, query, orderBy, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyAIWvoGZmqUbW-ZuBxHnLi4AVKkWOUb724", authDomain: "alchi-d1c38.firebaseapp.com", projectId: "alchi-d1c38", storageBucket: "alchi-d1c38.firebasestorage.app", messagingSenderId: "1049557849901", appId: "1:1049557849901:web:34258fac5872692acb65a4" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const state = {
+            user: null,
+            sites: [],
+            products: [],
+            currentSite: null,
+            currentSiteId: null,
+            settleData: null // for report export
+        };
+
+        const UI = {
+            toast: (msg, type='success') => {
+                const t = document.createElement('div'); t.className=`toast ${type}`; 
+                t.innerHTML = msg;
+                document.getElementById('toast-container').appendChild(t);
+                setTimeout(()=>t.remove(), 3500);
+            },
+            loader: (show) => document.getElementById('loader').classList.toggle('hidden', !show)
+        };
+
+        const App = {
+            init: async () => {
+                const savedUser = localStorage.getItem('alchi_user');
+                if(!savedUser) {
+                    document.getElementById('login-overlay').classList.add('active');
+                    UI.loader(false);
+                    return;
+                }
+                state.user = JSON.parse(savedUser);
+                document.getElementById('user-display').innerText = state.user.fullName;
+
+                try { await signInAnonymously(auth); } catch(e) { console.error(e); }
+
+                onSnapshot(collection(db, "products"), s => {
+                    state.products = s.docs.map(d => {
+                        const dat = d.data();
+                        let total = dat.simpleQty || 0;
+                        if(dat.hasBatches !== false) {
+                            total = (dat.lots || []).reduce((a,b)=>a+(b.qty||0),0);
+                        }
+                        return { id:d.id, ...dat, total };
+                    });
+                    // Refresh details if open to show current stock
+                    if(state.currentSiteId) Sites.renderDetails();
+                });
+
+                onSnapshot(query(collection(db, "construction_sites"), orderBy("createdAt", "desc")), s => {
+                    state.sites = s.docs.map(d => ({id:d.id, ...d.data()}));
+                    Sites.renderList();
+                    if(state.currentSiteId) {
+                        const updated = state.sites.find(x => x.id === state.currentSiteId);
+                        if(updated) { state.currentSite = updated; Sites.renderDetails(); }
+                    }
+                    UI.loader(false);
+                });
+            },
+            // HELPER: Loads a font that supports Polish characters
+            getPDF: async () => {
+                if (!window.jspdf) { UI.toast("Błąd biblioteki PDF", "error"); return null; }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Fetch Roboto-Regular which has Latin-Extended support
+                try {
+                    const fontUrl = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf";
+                    const resp = await fetch(fontUrl);
+                    if(!resp.ok) throw "Font fetch failed";
+                    const blob = await resp.blob();
+                    
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = function() {
+                            const base64data = reader.result.split(',')[1];
+                            doc.addFileToVFS("Roboto-Regular.ttf", base64data);
+                            doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+                            doc.setFont("Roboto");
+                            resolve(doc);
+                        }
+                        reader.onerror = () => resolve(doc); // Fallback to default
+                        reader.readAsDataURL(blob);
+                    });
+                } catch(e) {
+                    console.error("Font loading error:", e);
+                    UI.toast("Ostrzeżenie: Problem z polskimi znakami (Błąd czcionki)", "error");
+                    return doc; // Return doc with default fonts as fallback
+                }
+            },
+            setView: (view) => {
+                if(view === 'list') {
+                    document.getElementById('view-list').classList.remove('hidden');
+                    document.getElementById('view-details').classList.add('hidden');
+                    document.getElementById('nav-project-details').classList.add('hidden');
+                    document.getElementById('btn-add-site').classList.remove('hidden');
+                    document.getElementById('page-title').innerText = "Budowy i Inwestycje";
+                    state.currentSiteId = null;
+                } else {
+                    document.getElementById('view-list').classList.add('hidden');
+                    document.getElementById('view-details').classList.remove('hidden');
+                    document.getElementById('nav-project-details').classList.remove('hidden');
+                    document.getElementById('btn-add-site').classList.add('hidden');
+                }
+            }
+        };
+
+        const Sites = {
+            renderList: () => {
+                const c = document.getElementById('sites-container');
+                c.innerHTML = state.sites.map(s => `
+                    <div class="project-card ${s.status==='closed'?'closed':''}" onclick="Sites.select('${s.id}')">
+                        <div class="project-status ${s.status==='active'?'status-active':'status-closed'}">${s.status==='active'?'W TOKU':'ZAKOŃCZONA'}</div>
+                        
+                        <div class="card-actions" onclick="event.stopPropagation()">
+                             <button class="btn-icon-only" title="Edytuj" onclick="Sites.openEditModal('${s.id}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                             </button>
+                             <button class="btn-icon-only" title="Rozlicz / Raport" onclick="Sites.openSettleModal('${s.id}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                             </button>
+                             <button class="btn-icon-only" title="${s.status==='active'?'Zamknij Budowę':'Otwórz Ponownie'}" onclick="Sites.toggleStatus('${s.id}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${s.status==='active' ? 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' : 'M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z'}" /></svg>
+                             </button>
+                             <button class="btn-icon-only" title="Usuń" onclick="Sites.delete('${s.id}')" style="color:var(--danger); border-color:#fee2e2;">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                             </button>
+                        </div>
+
+                        <h3 style="margin:24px 0 8px 0;">${s.name}</h3>
+                        <div style="color:var(--text-muted); font-size:0.9rem;">${s.address}</div>
+                        
+                        <div style="margin-top:20px; font-size:0.8rem; color:var(--text-muted);">
+                            Produktów w planie: <strong>${(s.materials||[]).length}</strong>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            openAddModal: () => document.getElementById('modal-add-site').classList.add('active'),
+            openEditModal: (id) => {
+                const s = state.sites.find(x=>x.id===id);
+                document.getElementById('edit-site-id').value = id;
+                document.getElementById('edit-site-name').value = s.name;
+                document.getElementById('edit-site-addr').value = s.address;
+                document.getElementById('modal-edit-site').classList.add('active');
+            },
+            saveEdit: async () => {
+                const id = document.getElementById('edit-site-id').value;
+                const n = document.getElementById('edit-site-name').value;
+                const a = document.getElementById('edit-site-addr').value;
+                if(!n) return UI.toast("Nazwa wymagana", "error");
+                
+                await updateDoc(doc(db, "construction_sites", id), { name: n, address: a });
+                document.getElementById('modal-edit-site').classList.remove('active');
+                UI.toast("Zapisano zmiany");
+            },
+            toggleStatus: async (id) => {
+                const s = state.sites.find(x=>x.id===id);
+                const newStatus = s.status === 'active' ? 'closed' : 'active';
+                const msg = newStatus === 'closed' ? "Zamknięto budowę" : "Przywrócono budowę";
+                if(confirm(`Czy na pewno zmienić status budowy na: ${newStatus==='closed'?'ZAMKNIĘTA':'AKTYWNA'}?`)) {
+                    await updateDoc(doc(db, "construction_sites", id), { status: newStatus });
+                    UI.toast(msg);
+                }
+            },
+            create: async () => {
+                const n = document.getElementById('new-site-name').value;
+                const a = document.getElementById('new-site-addr').value;
+                if(!n) return UI.toast('Podaj nazwę', 'error');
+                
+                UI.loader(true);
+                await addDoc(collection(db, "construction_sites"), {
+                    name: n, address: a, status: 'active', materials: [], createdAt: serverTimestamp()
+                });
+                document.getElementById('modal-add-site').classList.remove('active');
+                document.getElementById('new-site-name').value='';
+                document.getElementById('new-site-addr').value='';
+                UI.toast('Utworzono budowę');
+                UI.loader(false);
+            },
+            delete: async (id) => {
+                if(confirm("Czy na pewno chcesz usunąć tę budowę? Tej operacji nie można cofnąć.")) {
+                    UI.loader(true);
+                    await deleteDoc(doc(db, "construction_sites", id));
+                    UI.toast("Budowa została usunięta");
+                    UI.loader(false);
+                }
+            },
+            select: (id) => {
+                state.currentSiteId = id;
+                state.currentSite = state.sites.find(x=>x.id===id);
+                Sites.renderDetails();
+                App.setView('details');
+            },
+            renderDetails: () => {
+                const s = state.currentSite;
+                if(!s) return;
+                document.getElementById('detail-name').innerText = s.name;
+                document.getElementById('detail-address').innerText = s.address;
+                document.getElementById('detail-status').innerText = s.status === 'active' ? 'AKTYWNA' : 'ZAMKNIĘTA';
+                document.getElementById('detail-status').className = `badge ${s.status === 'active' ? 'status-active' : 'status-closed'}`;
+                document.getElementById('nav-project-name').innerText = s.name;
+                document.getElementById('page-title').innerText = "Szczegóły Budowy";
+
+                const tbody = document.querySelector('#materials-table tbody');
+                const mats = s.materials || [];
+                
+                tbody.innerHTML = mats.length === 0 
+                    ? `<tr><td colspan="7" style="text-align:center; padding:30px; color:#999;">Brak zaplanowanych materiałów. Rozpocznij od "Zaplanuj Towar".</td></tr>`
+                    : mats.map(m => {
+                        const remaining = (m.issued || 0) - (m.consumed || 0);
+                        const progress = m.planned > 0 ? Math.min(100, (m.issued / m.planned) * 100) : 0;
+                        
+                        // NEW: Look up stock in state.products
+                        const productInDb = state.products.find(p => p.id === m.pid);
+                        const stock = productInDb ? productInDb.total : 0;
+                        const stockColor = stock >= (m.planned - (m.issued||0)) ? 'var(--success)' : 'var(--danger)';
+
+                        // New: Delete action logic (only if not issued/consumed)
+                        const canDelete = (m.issued || 0) === 0 && (m.consumed || 0) === 0;
+
+                        return `
+                        <tr>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <strong>${m.name}</strong>
+                                    ${m.pid ? '' : '<span style="color:red; font-size:0.7em;">(Usunięty z bazy)</span>'}
+                                    ${canDelete ? `
+                                    <button class="btn-icon-only danger" title="Usuń z planu" onclick="Mat.deleteMaterial('${m.pid}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>` : ''}
+                                </div>
+                            </td>
+                            <td style="color:${stockColor}; font-weight:600;">
+                                ${stock} ${m.unit}
+                            </td>
+                            <td>${m.planned} ${m.unit}</td>
+                            <td><strong style="color:var(--accent-dark)">${m.issued||0}</strong> ${m.unit}</td>
+                            <td style="width:200px;">
+                                <div style="font-size:0.75rem; display:flex; justify-content:space-between; margin-bottom:2px;">
+                                    <span>Wydano: ${Math.round(progress)}%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="bar-issued" style="width:${progress}%"></div>
+                                </div>
+                            </td>
+                            <td>${m.consumed||0} ${m.unit}</td>
+                            <td><span class="badge ${remaining>0?'badge-green':'badge-gray'}">${remaining} ${m.unit}</span></td>
+                        </tr>
+                        `;
+                    }).join('');
+            },
+            openSettleModal: (id) => {
+                const s = state.sites.find(x=>x.id===id);
+                if(!s) return;
+                state.settleData = s;
+                
+                const tbody = document.querySelector('#settle-table tbody');
+                tbody.innerHTML = (s.materials||[]).map(m => {
+                    const balance = (m.planned || 0) - (m.issued || 0);
+                    const onSite = (m.issued || 0) - (m.consumed || 0);
+                    let balanceHtml = '';
+                    if(balance > 0) balanceHtml = `<span style="color:var(--text-muted)">Brakuje ${balance}</span>`;
+                    else if(balance === 0) balanceHtml = `<span style="color:var(--success)">Zgodne z planem</span>`;
+                    else balanceHtml = `<span style="color:var(--danger)">Nadwyżka ${Math.abs(balance)}</span>`;
+                    
+                    return `
+                    <tr>
+                        <td><strong>${m.name}</strong></td>
+                        <td>${m.planned}</td>
+                        <td>${m.issued||0}</td>
+                        <td>${m.consumed||0}</td>
+                        <td style="font-weight:bold; color:var(--accent-dark);">${onSite}</td>
+                        <td>${balanceHtml}</td>
+                    </tr>`;
+                }).join('');
+                document.getElementById('modal-settle').classList.add('active');
+            },
+            downloadReportCSV: async () => {
+                if(!state.settleData) return;
+                const s = state.settleData;
+                UI.loader(true);
+
+                let historyItems = [];
+                try {
+                    const hSnap = await getDocs(query(collection(db, "history"), orderBy("date", "desc")));
+                    historyItems = hSnap.docs
+                        .map(d => {
+                            const data = d.data();
+                            return { ...data, dateStr: data.date ? data.date.toDate().toLocaleString() : 'N/A' };
+                        })
+                        .filter(h => h.doc && h.doc.includes(s.name)); 
+                } catch(e) { console.error(e); }
+
+                let csv = `Raport Szczegolowy Budowy: ${s.name} (${s.address})\n`;
+                csv += `Data Raportu: ${new Date().toLocaleString()}\n`;
+                csv += `Status: ${s.status}\n\n`;
+                
+                csv += "--- PODSUMOWANIE (BILANS) ---\n";
+                csv += "Produkt,Zaplanowano,Wydano,Zuzyto,Stan Na Budowie,Jednostka,Bilans\n";
+                (s.materials||[]).forEach(m => {
+                    const onSite = (m.issued || 0) - (m.consumed || 0);
+                    const balance = m.planned - (m.issued || 0);
+                    csv += `"${m.name}",${m.planned},${m.issued||0},${m.consumed||0},${onSite},${m.unit},${balance}\n`;
+                });
+
+                csv += "\n--- HISTORIA OPERACJI ---\n";
+                csv += "Data,Operacja,Produkt,Ilosc,Jednostka,Partia (LOT),Uzytkownik,Notatka\n";
+
+                historyItems.forEach(h => {
+                    let opType = "Inne";
+                    if(h.type === 'wz_bud') opType = "Wydanie (WZ)";
+                    else if(h.type === 'rw_bud') opType = "Zwrot (RW)";
+                    else if(h.type === 'zuzycie_bud') opType = "Zuzycie";
+                    else if(h.type === 'plan_bud') opType = "Zmiana Planu";
+
+                    if(h.items && h.items.length) {
+                        h.items.forEach(item => {
+                            csv += `"${h.dateStr}","${opType}","${item.name}",${item.qty},"${item.unit||''}",${item.lot||''},"${h.user}","${item.note||''}"\n`;
+                        });
+                    }
+                });
+
+                UI.loader(false);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `Raport_${s.name.replace(/\s/g,'_')}.csv`;
+                link.click();
+            },
+
+            downloadReportPDF: async () => {
+                if(!state.settleData) return;
+                const s = state.settleData;
+                UI.loader(true);
+
+                // 1. Get Doc with Polish Font
+                const doc = await App.getPDF();
+
+                // 2. Fetch History
+                let historyItems = [];
+                try {
+                    const hSnap = await getDocs(query(collection(db, "history"), orderBy("date", "desc")));
+                    historyItems = hSnap.docs
+                        .map(d => {
+                            const data = d.data();
+                            return { ...data, dateStr: data.date ? data.date.toDate().toLocaleString() : 'N/A' };
+                        })
+                        .filter(h => h.doc && h.doc.includes(s.name)); 
+                } catch(e) { console.error(e); }
+
+                // 3. Header
+                doc.setFontSize(16);
+                doc.text(`Raport Budowy: ${s.name}`, 14, 20);
+                doc.setFontSize(10);
+                doc.text(`Adres: ${s.address}`, 14, 26);
+                doc.text(`Data: ${new Date().toLocaleString()}`, 14, 32);
+
+                // 4. Table 1: Totals
+                const itemsTotals = (s.materials||[]).map(m => [
+                    m.name,
+                    m.planned,
+                    m.issued||0,
+                    m.consumed||0,
+                    (m.issued || 0) - (m.consumed || 0), // On Site
+                    m.unit
+                ]);
+
+                doc.autoTable({
+                    startY: 40,
+                    head: [['Produkt', 'Plan', 'Wydano', 'Zużyto', 'Stan', 'Jedn.']],
+                    body: itemsTotals,
+                    theme: 'grid',
+                    styles: { font: 'Roboto', fontSize: 9 }, // USE ROBOTO FONT
+                    headStyles: { fillColor: [245, 158, 11] }
+                });
+
+                // 5. Table 2: History
+                let rowsHistory = [];
+                historyItems.forEach(h => {
+                    let opType = "Inne";
+                    if(h.type === 'wz_bud') opType = "WZ";
+                    else if(h.type === 'rw_bud') opType = "RW";
+                    else if(h.type === 'zuzycie_bud') opType = "Zużycie";
+                    else if(h.type === 'plan_bud') opType = "Plan";
+
+                    if(h.items && h.items.length) {
+                        h.items.forEach(item => {
+                            rowsHistory.push([
+                                h.dateStr,
+                                opType,
+                                item.name,
+                                item.qty + " " + (item.unit||''),
+                                item.lot || '-',
+                                h.user
+                            ]);
+                        });
+                    }
+                });
+
+                doc.text("Historia Operacji", 14, doc.lastAutoTable.finalY + 10);
+                
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 15,
+                    head: [['Data', 'Typ', 'Produkt', 'Ilość', 'Partia', 'Użytkownik']],
+                    body: rowsHistory,
+                    theme: 'striped',
+                    styles: { font: 'Roboto', fontSize: 8 }, // USE ROBOTO FONT
+                    headStyles: { fillColor: [30, 41, 59] }
+                });
+
+                UI.loader(false);
+                doc.save(`Raport_Budowy_${s.name.replace(/\s/g,'_')}.pdf`);
+            }
+        };
+
+        const Mat = {
+            printPlan: async () => {
+                UI.loader(true);
+                // USE NEW GET PDF HELPER
+                const doc = await App.getPDF();
+                const s = state.currentSite;
+
+                doc.setFontSize(16);
+                doc.text(`Plan Materiałowy: ${s.name}`, 14, 20);
+                
+                doc.setFontSize(10);
+                doc.text(`Adres: ${s.address}`, 14, 28);
+                doc.text(`Data: ${new Date().toLocaleDateString()}`, 14, 34);
+
+                const tableData = (s.materials || []).map(m => [
+                    m.name,
+                    m.planned + " " + m.unit,
+                    (m.issued || 0) + " " + m.unit,
+                    (m.planned - (m.issued || 0)) + " " + m.unit
+                ]);
+
+                doc.autoTable({
+                    startY: 40,
+                    head: [['Produkt', 'Plan', 'Wydano', 'Pozostało do wydania']],
+                    body: tableData,
+                    theme: 'grid',
+                    styles: { font: 'Roboto' }, // USE ROBOTO
+                    headStyles: { fillColor: [245, 158, 11] } // Orange accent
+                });
+
+                UI.loader(false);
+                doc.save(`Plan_${s.name.substring(0,10)}.pdf`);
+            },
+            openPlanModal: () => {
+                document.getElementById('plan-search').value = '';
+                document.getElementById('plan-results').innerHTML = '';
+                document.getElementById('plan-results').classList.remove('active');
+                
+                document.getElementById('plan-selected-pid').value = '';
+                document.getElementById('plan-selected-name').value = '';
+                document.getElementById('plan-selected-unit').value = '';
+                document.getElementById('plan-selected-display').innerText = '';
+                
+                document.getElementById('plan-qty').value = 1;
+                document.getElementById('modal-plan').classList.add('active');
+                setTimeout(()=>document.getElementById('plan-search').focus(), 100);
+            },
+            renderPlanSearch: () => {
+                const q = document.getElementById('plan-search').value.toLowerCase();
+                const resDiv = document.getElementById('plan-results');
+                
+                if(q.length < 2) {
+                    resDiv.classList.remove('active');
+                    return;
+                }
+
+                const filtered = state.products.filter(p => 
+                    !p.archived && (p.name.toLowerCase().includes(q) || (p.ean||'').includes(q))
+                );
+
+                if(filtered.length === 0) {
+                    resDiv.innerHTML = '<div class="search-item" style="cursor:default; color:#999;">Brak wyników</div>';
+                } else {
+                    resDiv.innerHTML = filtered.map(p => `
+                        <div class="search-item" onclick="Mat.selectPlanProduct('${p.id}')">
+                            <strong>${p.name}</strong>
+                            <small>EAN: ${p.ean||'-'} | Jednostka: ${p.unit}</small>
+                        </div>
+                    `).join('');
+                }
+                resDiv.classList.add('active');
+            },
+            selectPlanProduct: (pid) => {
+                const p = state.products.find(x => x.id === pid);
+                if(p) {
+                    document.getElementById('plan-selected-pid').value = p.id;
+                    document.getElementById('plan-selected-name').value = p.name;
+                    document.getElementById('plan-selected-unit').value = p.unit;
+                    document.getElementById('plan-selected-display').innerText = `Wybrano: ${p.name}`;
+                    document.getElementById('plan-results').classList.remove('active');
+                    document.getElementById('plan-search').value = '';
+                }
+            },
+            deleteMaterial: async (pid) => {
+                if(!confirm("Czy na pewno usunąć ten materiał z planu?")) return;
+                UI.loader(true);
+                try {
+                    await runTransaction(db, async (t) => {
+                        const ref = doc(db, "construction_sites", state.currentSiteId);
+                        const sSnap = await t.get(ref);
+                        if (!sSnap.exists()) throw "Budowa nie istnieje";
+                        
+                        const currentMats = sSnap.data().materials || [];
+                        const idx = currentMats.findIndex(x => x.pid === pid);
+                        
+                        if(idx === -1) throw "Materiał nie znaleziony";
+                        
+                        // Safety Check: Can only delete if nothing issued/consumed
+                        if((currentMats[idx].issued || 0) > 0 || (currentMats[idx].consumed || 0) > 0) {
+                            throw "Nie można usunąć materiału, który ma już historię ruchów (Wydano/Zużyto).";
+                        }
+                        
+                        currentMats.splice(idx, 1);
+                        t.update(ref, { materials: currentMats });
+                    });
+                    UI.toast("Usunięto materiał z planu");
+                } catch(e) { console.error(e); UI.toast(typeof e === 'string' ? e : "Błąd usuwania", 'error'); }
+                UI.loader(false);
+            },
+            savePlan: async () => {
+                const pid = document.getElementById('plan-selected-pid').value;
+                const name = document.getElementById('plan-selected-name').value;
+                const unit = document.getElementById('plan-selected-unit').value;
+                const qty = Number(document.getElementById('plan-qty').value);
+                
+                if(!pid) return UI.toast('Wyszukaj i wybierz produkt', 'error');
+                if(qty <= 0) return UI.toast('Ilość musi być dodatnia', 'error');
+
+                UI.loader(true);
+                try {
+                    await runTransaction(db, async (t) => {
+                        const ref = doc(db, "construction_sites", state.currentSiteId);
+                        const sSnap = await t.get(ref);
+                        const currentMats = sSnap.data().materials || [];
+                        const idx = currentMats.findIndex(x => x.pid === pid);
+                        
+                        if(idx >= 0) {
+                            currentMats[idx].planned += qty;
+                        } else {
+                            currentMats.push({ pid, name, unit, planned: qty, issued: 0, consumed: 0 });
+                        }
+                        
+                        t.update(ref, { materials: currentMats });
+                        
+                        // NEW: LOG PLAN CHANGE TO HISTORY
+                        t.set(doc(collection(db, "history")), {
+                            type: 'plan_bud',
+                            doc: `Plan: ${sSnap.data().name}`,
+                            date: serverTimestamp(),
+                            user: state.user.fullName,
+                            items: [{
+                                name: name,
+                                qty: qty,
+                                unit: unit,
+                                note: "Dodano do planu"
+                            }]
+                        });
+                    });
+                    UI.toast('Zaktualizowano plan');
+                    document.getElementById('modal-plan').classList.remove('active');
+                } catch(e) { console.error(e); UI.toast('Błąd zapisu', 'error'); }
+                UI.loader(false);
+            },
+
+            // --- ISSUING (WZ) ---
+            openIssueModal: () => {
+                const sel = document.getElementById('issue-prod-select');
+                const mats = state.currentSite.materials || [];
+                // STRICT CONSTRAINT: Only populate items that are in the plan
+                if(mats.length === 0) {
+                    sel.innerHTML = '<option value="">Brak zaplanowanych towarów</option>';
+                } else {
+                    sel.innerHTML = `<option value="">-- Wybierz Produkt z Planu --</option>` + mats.map(m => {
+                        // Find current warehouse stock for this item
+                        const p = state.products.find(x => x.id === m.pid);
+                        const stock = p ? p.total : 0;
+                        const remainingToIssue = m.planned - (m.issued || 0);
+                        return `<option value="${m.pid}"> ${m.name} (Plan: ${m.planned}, Wydano: ${m.issued||0}) | Magazyn: ${stock} </option>`;
+                    }).join('');
+                }
+                
+                document.getElementById('issue-qty').value = '';
+                document.getElementById('issue-lot-section').classList.add('hidden');
+                document.getElementById('modal-issue').classList.add('active');
+            },
+            onIssueProdChange: () => {
+                const pid = document.getElementById('issue-prod-select').value;
+                if(!pid) return;
+                const p = state.products.find(x=>x.id===pid);
+                const lotSec = document.getElementById('issue-lot-section');
+                const lotSel = document.getElementById('issue-lot-select');
+                
+                if(p.hasBatches !== false) {
+                    lotSec.classList.remove('hidden');
+                    if(!p.lots || !p.lots.length) {
+                        lotSel.innerHTML = '<option value="">BRAK PARTII NA STANIE</option>';
+                    } else {
+                        // FIX: ADDED "-- Wybierz Partię --" TO FORCE SELECTION
+                        lotSel.innerHTML = `<option value="">-- Wybierz Partię --</option>` + p.lots.map((l,i) => 
+                            `<option value="${i}" data-lot="${l.lot}" data-exp="${l.exp}">LOT: ${l.lot} (Exp: ${l.exp}) - Dostępne: ${l.qty}</option>`
+                        ).join('');
+                    }
+                } else {
+                    lotSec.classList.add('hidden');
+                }
+            },
+            confirmIssue: async () => {
+                const pid = document.getElementById('issue-prod-select').value;
+                if(!pid) return UI.toast('Wybierz produkt', 'error');
+                
+                // Extra check: Ensure product is in plan
+                const inPlan = state.currentSite.materials.find(m => m.pid === pid);
+                if(!inPlan) return UI.toast("Ten produkt nie jest w planie!", "error");
+
+                const p = state.products.find(x=>x.id===pid);
+                const qty = Number(document.getElementById('issue-qty').value);
+                if(qty <= 0) return UI.toast('Ilość musi być dodatnia', 'error');
+
+                // --- ALERT & PASSWORD CHECK IF EXCEEDING PLAN ---
+                const currentIssued = inPlan.issued || 0;
+                const plannedQty = inPlan.planned || 0;
+                if ((currentIssued + qty) > plannedQty) {
+                    const pass = prompt(`UWAGA: Próbujesz wydać więcej towaru niż zaplanowano.\nPlan: ${plannedQty}, Wydano: ${currentIssued}, Próba wydania: ${qty}.\n\nPodaj hasło administratora, aby kontynuować:`);
+                    if (pass !== "admin123") {
+                        return UI.toast("Błędne hasło lub brak autoryzacji.", "error");
+                    }
+                }
+                // ------------------------------------------------
+
+                const isBatch = p.hasBatches !== false;
+                let targetLot = null;
+                let targetExp = null;
+                
+                if(isBatch) {
+                    const lotSelect = document.getElementById('issue-lot-select');
+                    // FIX: ENSURE VALUE IS NOT EMPTY (FORCED SELECTION)
+                    if(lotSelect.value === "") return UI.toast('Wybierz partię (LOT) z listy', 'error');
+                    targetLot = lotSelect.options[lotSelect.selectedIndex].getAttribute('data-lot');
+                    targetExp = lotSelect.options[lotSelect.selectedIndex].getAttribute('data-exp');
+                } else {
+                    if(qty > p.simpleQty) return UI.toast(`Za mało towaru (Max: ${p.simpleQty})`, 'error');
+                }
+
+                UI.loader(true);
+                try {
+                    await runTransaction(db, async (t) => {
+                        const siteRef = doc(db, "construction_sites", state.currentSiteId);
+                        const prodRef = doc(db, "products", pid);
+                        
+                        const sSnap = await t.get(siteRef);
+                        const pSnap = await t.get(prodRef);
+                        const sData = sSnap.data();
+                        const pData = pSnap.data();
+                        let issuedLotName = null;
+                        
+                        if(isBatch) {
+                            const lots = pData.lots || [];
+                            const lotIdx = lots.findIndex(l => l.lot === targetLot && l.exp === targetExp);
+                            if (lotIdx === -1) throw "Partia niedostępna";
+                            if (qty > lots[lotIdx].qty) throw `Brak wystarczającej ilości w partii`;
+                            issuedLotName = lots[lotIdx].lot;
+                            lots[lotIdx].qty -= qty;
+                            if(lots[lotIdx].qty <= 0) lots.splice(lotIdx, 1);
+                            t.update(prodRef, { lots: lots });
+                        } else {
+                            if (qty > (pData.simpleQty || 0)) throw `Brak wystarczającej ilości w magazynie`;
+                            t.update(prodRef, { simpleQty: (pData.simpleQty || 0) - qty });
+                        }
+                        
+                        const mats = sData.materials || [];
+                        const matIdx = mats.findIndex(m => m.pid === pid);
+                        // Since we filtered select by plan, matIdx should exist.
+                        if(matIdx >= 0) {
+                            mats[matIdx].issued = (mats[matIdx].issued || 0) + qty;
+                        }
+                        t.update(siteRef, { materials: mats });
+                        
+                        t.set(doc(collection(db, "history")), {
+                            type: 'wz_bud',
+                            doc: `WZ na: ${sData.name}`,
+                            date: serverTimestamp(),
+                            user: state.user.fullName,
+                            items: [{
+                                name: pData.name,
+                                qty: qty,
+                                lot: issuedLotName,
+                                note: "Wydanie na budowę"
+                            }]
+                        });
+                    });
+                    
+                    UI.toast('Wydano towar na budowę');
+                    document.getElementById('modal-issue').classList.remove('active');
+                } catch(e) { console.error(e); UI.toast(typeof e==='string'?e:'Błąd transakcji', 'error'); }
+                UI.loader(false);
+            },
+
+            // --- RETURNS (RW) ---
+            openReturnModal: () => {
+                const mats = state.currentSite.materials || [];
+                // Can only return what is currently on site (Issued - Consumed)
+                const returnable = mats.filter(m => (m.issued || 0) - (m.consumed || 0) > 0);
+                
+                if(returnable.length === 0) return UI.toast('Brak materiałów do zwrotu', 'error');
+
+                const sel = document.getElementById('return-prod-select');
+                sel.innerHTML = `<option value="">-- Wybierz Produkt --</option>` + returnable.map(m => {
+                    const onSite = (m.issued || 0) - (m.consumed || 0);
+                    return `<option value="${m.pid}"> ${m.name} (Na stanie budowy: ${onSite} ${m.unit})</option>`;
+                }).join('');
+                document.getElementById('return-qty').value = '';
+                document.getElementById('return-lot-input').value = '';
+                document.getElementById('return-lot-exp').value = '';
+                document.getElementById('return-lot-section').classList.add('hidden');
+                document.getElementById('modal-return').classList.add('active');
+            },
+            onReturnProdChange: () => {
+                const pid = document.getElementById('return-prod-select').value;
+                if(!pid) return;
+                const p = state.products.find(x => x.id === pid);
+                const lotDiv = document.getElementById('return-lot-section');
+                
+                if (p && p.hasBatches !== false) {
+                    lotDiv.classList.remove('hidden');
+                } else {
+                    lotDiv.classList.add('hidden');
+                }
+            },
+            confirmReturn: async () => {
+                const pid = document.getElementById('return-prod-select').value;
+                const qty = Number(document.getElementById('return-qty').value);
+                
+                if(!pid || qty <= 0) return UI.toast('Błędne dane', 'error');
+                
+                // Read LOT input
+                const p = state.products.find(x => x.id === pid);
+                const isBatch = p.hasBatches !== false;
+                let returnLot = null;
+                let returnExp = null;
+
+                if (isBatch) {
+                    returnLot = document.getElementById('return-lot-input').value.trim(); // SANITIZED
+                    returnExp = document.getElementById('return-lot-exp').value.trim();   // SANITIZED
+                    if (!returnLot) return UI.toast("Musisz podać numer partii (LOT)", "error");
+                }
+
+                UI.loader(true);
+                try {
+                    await runTransaction(db, async (t) => {
+                        const siteRef = doc(db, "construction_sites", state.currentSiteId);
+                        const prodRef = doc(db, "products", pid);
+                        
+                        const sSnap = await t.get(siteRef);
+                        const pSnap = await t.get(prodRef);
+                        const sData = sSnap.data();
+                        const pData = pSnap.data();
+                        
+                        // Check logic on Site
+                        const mats = sData.materials || [];
+                        const matIdx = mats.findIndex(m => m.pid === pid);
+                        if(matIdx === -1) throw "Błąd danych budowy";
+                        
+                        const currentOnSite = (mats[matIdx].issued || 0) - (mats[matIdx].consumed || 0);
+                        if(qty > currentOnSite) throw `Nie możesz zwrócić więcej niż jest na budowie (${currentOnSite})`;
+                        
+                        // Decrement Site Issued
+                        mats[matIdx].issued -= qty;
+                        t.update(siteRef, { materials: mats });
+                        
+                        // Increment Warehouse
+                        if(isBatch) {
+                            const lots = pData.lots || [];
+                            // Try to find matching lot (Using TRIMMED input)
+                            const existingLotIdx = lots.findIndex(l => l.lot === returnLot);
+                            
+                            if (existingLotIdx >= 0) {
+                                // Found - increment
+                                lots[existingLotIdx].qty += qty;
+                            } else {
+                                // Not found - create new
+                                lots.push({
+                                    lot: returnLot,
+                                    qty: qty,
+                                    exp: returnExp || 'Nieznana'
+                                });
+                            }
+                            t.update(prodRef, { lots: lots });
+                        } else {
+                            t.update(prodRef, { simpleQty: (pData.simpleQty || 0) + qty });
+                        }
+                        
+                        // Log
+                        t.set(doc(collection(db, "history")), {
+                            type: 'rw_bud',
+                            doc: `RW z: ${sData.name}`,
+                            date: serverTimestamp(),
+                            user: state.user.fullName,
+                            items: [{
+                                name: pData.name,
+                                qty: qty,
+                                lot: returnLot,
+                                note: "Zwrot z budowy"
+                            }]
+                        });
+                    });
+                    UI.toast('Zwrócono towar do magazynu');
+                    document.getElementById('modal-return').classList.remove('active');
+                } catch(e) { console.error(e); UI.toast(typeof e==='string'?e:'Błąd transakcji', 'error'); }
+                UI.loader(false);
+            },
+
+            // --- CONSUMPTION ---
+            openConsumeModal: () => {
+                const mats = state.currentSite.materials || [];
+                const available = mats.filter(m => (m.issued || 0) > (m.consumed || 0));
+                
+                if(available.length === 0) return UI.toast('Brak materiałów do zużycia', 'error');
+
+                const sel = document.getElementById('cons-prod-select');
+                sel.innerHTML = available.map(m => {
+                    const left = m.issued - m.consumed;
+                    return `<option value="${m.pid}"> ${m.name} (Dostępne: ${left} ${m.unit})</option>`;
+                }).join('');
+                document.getElementById('cons-qty').value = '';
+                document.getElementById('modal-consume').classList.add('active');
+            },
+            confirmConsume: async () => {
+                const pid = document.getElementById('cons-prod-select').value;
+                const qty = Number(document.getElementById('cons-qty').value);
+                if(!pid || qty <= 0) return UI.toast('Błędne dane', 'error');
+                
+                UI.loader(true);
+                try {
+                    await runTransaction(db, async (t) => {
+                        const ref = doc(db, "construction_sites", state.currentSiteId);
+                        const snap = await t.get(ref);
+                        const sData = snap.data();
+                        const mats = sData.materials;
+                        const idx = mats.findIndex(m => m.pid === pid);
+                        const limit = (mats[idx].issued || 0) - (mats[idx].consumed || 0);
+                        if(qty > limit) throw "Przekroczono stan na budowie";
+                        mats[idx].consumed = (mats[idx].consumed || 0) + qty;
+                        t.update(ref, { materials: mats });
+
+                        // NEW: LOG CONSUMPTION TO HISTORY
+                        t.set(doc(collection(db, "history")), {
+                            type: 'zuzycie_bud',
+                            doc: `Zużycie: ${sData.name}`,
+                            date: serverTimestamp(),
+                            user: state.user.fullName,
+                            items: [{
+                                name: mats[idx].name,
+                                qty: qty,
+                                unit: mats[idx].unit,
+                                note: "Deklaracja zużycia"
+                            }]
+                        });
+                    });
+                    UI.toast('Zadeklarowano zużycie');
+                    document.getElementById('modal-consume').classList.remove('active');
+                } catch(e) { console.error(e); UI.toast('Błąd zapisu', 'error'); }
+                UI.loader(false);
+            }
+        };
+
+        window.App = App; window.Sites = Sites; window.Mat = Mat; window.state = state;
+        App.init();
+    </script>
+</body>
+</html>
