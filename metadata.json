@@ -1,0 +1,6 @@
+{
+  "name": "ALCHI WMS",
+  "description": "System Zarządzania Magazynem ALCHI z obsługą partii, numerów LOT i dat ważności",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
